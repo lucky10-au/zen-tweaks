@@ -1,0 +1,10 @@
+#navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator .zen-workspaces-actions {
+  display: none !important;
+}
+
+#navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-stack,
+#navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-icon {
+  opacity: 0.5 !important;
+  visibility: visible !important;
+  display: flex !important;
+}
