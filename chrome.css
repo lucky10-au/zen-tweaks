@@ -74,3 +74,47 @@
 .pointerlockfswarning[onscreen] {
   translate: 0 16px !important;
 }
+
+/* ===== Docked ⋯ (app menu) as a right sidebar — see JS/appmenu-dock.uc.js ===== */
+#zt-appmenu-dock-splitter {
+  width: 4px;
+  min-width: 4px;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+#zt-appmenu-dock {
+  flex: none;
+  width: var(--zt-dock-width, 320px);
+  min-width: 0;
+  overflow: clip;
+  background: var(--zen-colors-secondary, light-dark(#f9f9fa, #2b2b33));
+  border-inline-start: 1px solid
+    light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.12));
+}
+
+#zt-appmenu-dock > panel#appMenu-popup {
+  display: flex !important;
+  flex: 1;
+  align-items: stretch;
+  appearance: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Kill the floating glass look while docked: edge-to-edge pane instead. */
+#zt-appmenu-dock panel#appMenu-popup::part(content) {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+/* Let the menu fill the pane height and scroll when long. */
+#zt-appmenu-dock .panel-viewcontainer,
+#zt-appmenu-dock .panel-viewstack {
+  flex: 1;
+  overflow-y: auto;
+}

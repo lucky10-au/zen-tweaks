@@ -10,6 +10,7 @@ A [Sine](https://github.com/CosmoCreeper/Sine) mod for the [Zen Browser](https:/
 - **Video PiP button removed** — the picture-in-picture hover button that overlays every video disappears. Turn the toggle back on to restore Zen's default.
 - **Collapsed sidebar CSS** — hides the workspace "three dots" options button in collapsed sidebar mode and dims the space icon on hover. Always on (pure CSS, no toggle).
 - **Native-style dropdowns** — the app menu and the other arrow-panel popups are re-styled as flat, 4px-corner glass instead of Zen's default glass, and the ⋯ menu is pinned flush into the top-right corner of the page area (toggle for the pinning).
+- **⋯ menu as a right sidebar (experimental)** — the ⋯ app menu opens as a resizable panel on the right side of the window instead of a floating popup; the page area shrinks to fit. Drag the divider to resize; flip the toggle off to go back to the normal popup.
 
 Every JS tweak has an on/off checkbox in the mod's settings panel; changes apply immediately, no restart needed.
 
@@ -29,6 +30,7 @@ JS/toast-timeout.uc.js Toast auto-hide after 5 s
 JS/urlbar-tweaks.uc.js Adaptive URL bar autofill + 15 results
 JS/appmenu-corner.uc.js Pins the ⋯ menu into the page corner
 JS/pip-toggle.uc.js    Removes the video picture-in-picture button
+JS/appmenu-dock.uc.js  Docks the ⋯ menu as a resizable right sidebar (experimental)
 preferences.json       Per-tweak checkboxes for Sine's settings panel
 ```
 - Fullscreen banner shrunk to a small pill (was a 21px-font monster)

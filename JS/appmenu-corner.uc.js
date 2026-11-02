@@ -20,6 +20,8 @@
   // Re-run on every open so toggling the pref takes effect immediately.
   panel.addEventListener("popupshown", () => {
     if (!Services.prefs.getBoolPref(PREF, true)) return;
+    // Don't fight the app menu dock (JS/appmenu-dock.uc.js).
+    if (panel.closest("#zt-appmenu-dock")) return;
 
     const anchor = panel.triggerNode || panel.anchorNode;
     if (!anchor || !panel.moveToAnchor) return;

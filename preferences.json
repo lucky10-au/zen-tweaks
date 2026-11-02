@@ -33,5 +33,12 @@
     "label": "**Remove the video picture-in-picture button**",
     "defaultValue": true,
     "description": "Hides the PiP button that appears in the corner of videos on hover. Applies to videos opened afterwards; changes take effect immediately."
+  },
+  {
+    "property": "extensions.zentweaks.appmenu-dock.enabled",
+    "type": "checkbox",
+    "label": "**Dock the ⋯ menu as a right sidebar**",
+    "defaultValue": false,
+    "description": "Experimental: the ⋯ app menu opens as a resizable panel on the right side of the window instead of a popup, and the page area shrinks to fit. Drag the divider to resize. Off = normal popup. Turning it off undocks the menu immediately."
   }
 ]
