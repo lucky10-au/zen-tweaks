@@ -26,5 +26,12 @@
     "label": "**Pin the ⋯ menu into the corner**",
     "defaultValue": true,
     "description": "Moves the ⋯ app menu flush into the top-right corner of the page area when it opens. Changes apply on the next time you open the menu."
+  },
+  {
+    "property": "extensions.zentweaks.pip-button.enabled",
+    "type": "checkbox",
+    "label": "**Remove the video picture-in-picture button**",
+    "defaultValue": true,
+    "description": "Hides the PiP button that appears in the corner of videos on hover. Applies to videos opened afterwards; changes take effect immediately."
   }
 ]

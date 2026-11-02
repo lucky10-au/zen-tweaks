@@ -1,9 +1,9 @@
 {
   "id": "c5vz4zi4l-yvtklwwb2-vnb35ev30",
   "name": "Zen Tweaks",
-  "description": "Small quality-of-life tweaks: Cmd+W closes the URL bar, corner toasts auto-hide after 5 s, better URL bar suggestions, glass dropdown restyle, and collapsed-sidebar cleanups. Togglable per tweak in Sine settings.",
+  "description": "Small quality-of-life tweaks: Cmd+W closes the URL bar, corner toasts auto-hide after 5 s, better URL bar suggestions, video PiP button removed, glass dropdown restyle, and collapsed-sidebar cleanups. Togglable per tweak in Sine settings.",
   "homepage": "https://github.com/lucky10-au/zen-tweaks",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "author": "Luca Were",
   "style": {
     "chrome": "chrome.css",
@@ -33,10 +33,16 @@
         "chrome://browser/content/browser.xhtml"
       ],
       "loadOrder": 4
+    },
+    "JS/pip-toggle.uc.js": {
+      "include": [
+        "chrome://browser/content/browser.xhtml"
+      ],
+      "loadOrder": 5
     }
   },
   "preferences": "preferences.json",
-  "updatedAt": "2026-11-02T20:30:00Z",
+  "updatedAt": "2026-11-02T21:30:00Z",
   "tags": [
     "UI",
     "Shortcuts"
