@@ -151,9 +151,61 @@
       }
       docked = true;
       log("docked");
+      dumpDebug(panel, multiView);
     } catch (ex) {
       console.error(LOG, "failed to dock, restoring popup:", ex);
       await undock();
+    }
+  }
+
+  function rect(el) {
+    if (!el) return "null";
+    const r = el.getBoundingClientRect();
+    return `${Math.round(r.width)}x${Math.round(r.height)} @${Math.round(r.left)},${Math.round(r.top)}`;
+  }
+
+  function dumpDebug(panel, multiView) {
+    try {
+      const pmv = PanelMultiView.forNode(multiView);
+      log("--- dock debug start ---");
+      log("panel.state:", panel.state, "hidden:", panel.hidden, "rect:", rect(panel));
+      log("dock rect:", rect(els.dock));
+      const cs = getComputedStyle(panel);
+      log(
+        "panel computed: display=" + cs.display,
+        "position=" + cs.position,
+        "visibility=" + cs.visibility,
+        "contain=" + cs.contain
+      );
+      const inDoc = document.getElementById(multiView.getAttribute("mainViewId"));
+      log(
+        "main view in document:", !!inDoc,
+        "template present:", !!document.getElementById("appMenu-viewCache")
+      );
+      log("pmv.connected:", pmv.connected, "openViews:", pmv.openViews?.length);
+      log(
+        "multiView children:",
+        [...multiView.children].map((c) => c.localName + "#" + (c.id || c.classList[0])).join(", ") || "(none)"
+      );
+      const vc = pmv._viewContainer;
+      const vs = pmv._viewStack;
+      log("viewContainer rect:", rect(vc), "css display:", vc && getComputedStyle(vc).display);
+      log("viewStack rect:", rect(vs), "children:", vs && vs.children.length);
+      const views = vs ? [...vs.children] : [];
+      for (const v of views) {
+        log(
+          "view:",
+          v.localName + "#" + (v.id || "?"),
+          "visibleattr:", v.hasAttribute("visible"),
+          "mainview:", v.getAttribute("mainview"),
+          "rect:", rect(v),
+          "css:", (c => `display=${c.display} visibility=${c.visibility} overflow=${c.overflow}`)(getComputedStyle(v))
+        );
+        log("view innerHTML length:", v.innerHTML.length);
+      }
+      log("--- dock debug end ---");
+    } catch (ex) {
+      console.error(LOG, "debug dump failed:", ex);
     }
   }
 
