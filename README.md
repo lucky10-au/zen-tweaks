@@ -31,3 +31,4 @@ JS/appmenu-corner.uc.js Pins the ⋯ menu into the page corner
 JS/pip-toggle.uc.js    Removes the video picture-in-picture button
 preferences.json       Per-tweak checkboxes for Sine's settings panel
 ```
+- Fullscreen banner shrunk to a small pill (was a 21px-font monster)
