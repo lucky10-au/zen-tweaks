@@ -19,5 +19,12 @@
     "label": "**Better URL bar suggestions**",
     "defaultValue": true,
     "description": "Autofill pages you visit often and show up to 15 suggestions in the dropdown. Off = Zen defaults."
+  },
+  {
+    "property": "extensions.zentweaks.appmenu-corner.enabled",
+    "type": "checkbox",
+    "label": "**Pin the ⋯ menu into the corner**",
+    "defaultValue": true,
+    "description": "Moves the ⋯ app menu flush into the top-right corner of the page area when it opens. Changes apply on the next time you open the menu."
   }
 ]

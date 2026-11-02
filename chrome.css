@@ -9,46 +9,35 @@
   display: flex !important;
 }
 
-/* ===== Native macOS menu material for arrow panels =====
- * Reverses Firefox's opt-out (popup.css: panel:where([type="arrow"])
- * { appearance: none }) so these panels render with the real native macOS
- * menu material — vibrancy glass, system corners, system shadow — the same
- * treatment context menus get. Known limitations (accepted):
- * - rows inside panels keep Zen styling (hybrid look);
- * - entry animations disabled (they fight the native material);
- * - extension popups excluded (they host web content);
- * - native vibrancy follows system light/dark, not the theme. */
+/* ===== Glass dropdowns (arrow panels), fully mod-drawn =====
+ * The native-material route (-moz-default-appearance: menupopup) was
+ * visually inert: macOS paints its own corners on the popup window and
+ * ignores our radius. So draw the shell in CSS instead — radius knob at
+ * the top, then material, hairline border, shadow. */
+:root {
+  /* change this one number to adjust cornering */
+  --zt-dropdown-radius: 5px;
+}
+
 @media (-moz-platform: macos) {
   panel[type="arrow"]:not(#feature-callout):not(#customizationui-widget-panel) {
-    appearance: auto !important;
-    -moz-default-appearance: menupopup !important;
-    background-color: Menu !important;
-    /* the native look draws its own corners and shadow */
-    --panel-box-shadow: none !important;
-    --panel-box-shadow-margin: 0px !important;
-    --panel-border-color: transparent !important;
+    appearance: none !important;
     --panel-background-color: transparent !important;
-    /* native cornering: GetMenuCornerRadius() = 6px, 12px on macOS Tahoe
-     * (Zen overrides this to 10px app-wide, so force the OS values) */
-    --panel-border-radius: 6px !important;
-
-    @media (-moz-mac-tahoe-theme) {
-      --panel-border-radius: 12px !important;
-    }
-
-    /* entry animations repaint the shell mid-material — flash risk */
+    --panel-border-color: transparent !important;
+    --panel-box-shadow: none !important;
+    /* leave room inside the popup window for our own shadow */
+    --panel-box-shadow-margin: 14px !important;
     transition: none !important;
     animation: none !important;
   }
 
   panel[type="arrow"]:not(#feature-callout):not(#customizationui-widget-panel)::part(content) {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    animation: none !important;
-    transition: none !important;
-    /* content must clip to the glass corners */
-    border-radius: var(--panel-border-radius) !important;
+    background-color: light-dark(rgba(249, 249, 250, 0.93), rgba(32, 32, 34, 0.93)) !important;
+    border-radius: var(--zt-dropdown-radius) !important;
+    border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12)) !important;
+    box-shadow: light-dark(0 12px 28px rgba(0, 0, 0, 0.22), 0 12px 28px rgba(0, 0, 0, 0.5)) !important;
     overflow: clip !important;
+    transition: none !important;
+    animation: none !important;
   }
 }
