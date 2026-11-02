@@ -41,3 +41,36 @@
     animation: none !important;
   }
 }
+
+/* Compact fullscreen / pointer-lock warning banner (the thing that slides
+   down when a video goes fullscreen). Stock Firefox sizes it at 21px font
+   with huge padding; this shrinks it to a small pill. */
+.pointerlockfswarning {
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+  border: 1px solid currentColor !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 4px 1px rgba(0, 0, 0, 0.4) !important;
+}
+
+.pointerlockfswarning::before {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 6px !important;
+}
+
+.pointerlockfswarning-domain-text,
+.pointerlockfswarning-generic-text {
+  margin: 0 4px !important;
+}
+
+/* Hang slightly less off the top edge when sliding up (former -10px assumed
+   a 2px border and big radius). */
+.pointerlockfswarning[ontop] {
+  translate: 0 -7px !important;
+}
+
+/* Sit closer to the top edge when shown */
+.pointerlockfswarning[onscreen] {
+  translate: 0 16px !important;
+}
