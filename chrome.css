@@ -16,26 +16,26 @@
  * the top, then material, hairline border, shadow. */
 :root {
   /* change this one number to adjust cornering */
-  --zt-dropdown-radius: 5px;
+  --zt-dropdown-radius: 4px;
 }
 
 @media (-moz-platform: macos) {
   panel[type="arrow"]:not(#feature-callout):not(#customizationui-widget-panel) {
     appearance: none !important;
+    /* the corner radius knob — change this number */
+    --zt-dropdown-radius: 4px;
     --panel-background-color: transparent !important;
     --panel-border-color: transparent !important;
     --panel-box-shadow: none !important;
-    /* leave room inside the popup window for our own shadow */
-    --panel-box-shadow-margin: 14px !important;
+    --panel-box-shadow-margin: 0px !important;
     transition: none !important;
     animation: none !important;
   }
 
   panel[type="arrow"]:not(#feature-callout):not(#customizationui-widget-panel)::part(content) {
     background-color: light-dark(rgba(249, 249, 250, 0.93), rgba(32, 32, 34, 0.93)) !important;
-    border-radius: var(--zt-dropdown-radius) !important;
+    border-radius: var(--zt-dropdown-radius, 4px) !important;
     border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12)) !important;
-    box-shadow: light-dark(0 12px 28px rgba(0, 0, 0, 0.22), 0 12px 28px rgba(0, 0, 0, 0.5)) !important;
     overflow: clip !important;
     transition: none !important;
     animation: none !important;
