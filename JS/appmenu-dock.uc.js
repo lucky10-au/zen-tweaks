@@ -164,12 +164,39 @@
     return `${Math.round(r.width)}x${Math.round(r.height)} @${Math.round(r.left)},${Math.round(r.top)}`;
   }
 
+  function matchingRules(el) {
+    const out = [];
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try {
+        rules = sheet.cssRules;
+      } catch (ex) {
+        continue;
+      }
+      const href = sheet.href || "(no href)";
+      for (const rule of rules) {
+        if (rule.type !== 1 || !rule.selectorText) continue;
+        let matches = false;
+        try {
+          matches = el.matches(rule.selectorText);
+        } catch (ex) {}
+        if (!matches) continue;
+        const pos = rule.style.getPropertyValue("position");
+        const disp = rule.style.getPropertyValue("display");
+        if (pos || disp) {
+          out.push(`${href.slice(-60)} :: ${rule.selectorText} -> position=${pos}${rule.style.getPropertyPriority("position") !== "" ? "!" : ""} display=${disp}`);
+        }
+      }
+    }
+    return out;
+  }
+
   function dumpDebug(panel, multiView) {
     try {
       const pmv = PanelMultiView.forNode(multiView);
       log("--- dock debug start ---");
       log("panel.state:", panel.state, "hidden:", panel.hidden, "rect:", rect(panel));
-      log("dock rect:", rect(els.dock));
+      log("dock rect:", rect(els.dock), "dock computed display:", getComputedStyle(els.dock).display);
       const cs = getComputedStyle(panel);
       log(
         "panel computed: display=" + cs.display,
@@ -177,6 +204,15 @@
         "visibility=" + cs.visibility,
         "contain=" + cs.contain
       );
+      log("rules affecting panel position/display:");
+      for (const line of matchingRules(panel)) log("  ", line);
+      // Empirical test: does an inline !important win over the cascade?
+      const before = getComputedStyle(panel).position;
+      panel.style.setProperty("position", "static", "important");
+      const after = getComputedStyle(panel).position;
+      panel.style.removeProperty("position");
+      log("inline important test: before=" + before, "after=" + after);
+      log("multiView rect:", rect(multiView), "computed display:", getComputedStyle(multiView).display);
       const inDoc = document.getElementById(multiView.getAttribute("mainViewId"));
       log(
         "main view in document:", !!inDoc,

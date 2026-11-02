@@ -85,6 +85,8 @@
 
 #zt-appmenu-dock {
   flex: none;
+  display: flex;
+  flex-direction: column;
   width: var(--zt-dock-width, 320px);
   min-width: 0;
   overflow: clip;
@@ -96,9 +98,10 @@
 #zt-appmenu-dock > panel#appMenu-popup {
   /* Neutralize the UA popup styling from xul.css, which otherwise takes the
      panel out of flow entirely (position: fixed, fit-content, top layer) even
-     when docked. */
+     when docked. !important everywhere: some later stylesheet pokes at these. */
   position: static !important;
   top: auto !important;
+  inset: auto !important;
   -moz-top-layer: none !important;
   contain: none !important;
   z-index: auto !important;
@@ -106,14 +109,25 @@
   height: auto !important;
   min-width: 0 !important;
   min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
   margin: 0 !important;
   -moz-window-input-region-margin: 0px !important;
   display: flex !important;
-  flex: 1;
-  align-items: stretch;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
   appearance: none !important;
   background: transparent !important;
   border-radius: 0 !important;
+}
+
+/* The multiview sits between the panel and the view container; stretch it too. */
+#zt-appmenu-dock panelmultiview {
+  display: flex !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
 }
 
 /* Kill the floating glass look while docked: edge-to-edge pane instead. */
