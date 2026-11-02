@@ -94,6 +94,20 @@
 }
 
 #zt-appmenu-dock > panel#appMenu-popup {
+  /* Neutralize the UA popup styling from xul.css, which otherwise takes the
+     panel out of flow entirely (position: fixed, fit-content, top layer) even
+     when docked. */
+  position: static !important;
+  top: auto !important;
+  -moz-top-layer: none !important;
+  contain: none !important;
+  z-index: auto !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  -moz-window-input-region-margin: 0px !important;
   display: flex !important;
   flex: 1;
   align-items: stretch;
