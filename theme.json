@@ -1,7 +1,22 @@
 {
+  "id": "c5vz4zi4l-yvtklwwb2-vnb35ev30",
   "name": "Zen Tweaks",
   "description": "Hides the space options dots in collapsed mode and makes Cmd+W close the URL bar first.",
   "homepage": "https://github.com/lucky10-au/zen-tweaks",
-  "version": "1.0.0",
-  "author": "Luca Were"
+  "version": "1.1.0",
+  "author": "Luca Were",
+  "style": {
+    "chrome": "chrome.css",
+    "content": ""
+  },
+  "scripts": {
+    "JS/close-urlbar.uc.js": {
+      "include": ["chrome://browser/content/browser.xhtml"],
+      "loadOrder": 1
+    }
+  },
+  "preferences": "",
+  "updatedAt": "2026-11-01T12:00:00Z",
+  "tags": ["UI", "Shortcuts"],
+  "fork": ["zen"]
 }
