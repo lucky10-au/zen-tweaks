@@ -11,6 +11,7 @@
   const ADAPTIVE = "browser.urlbar.autoFill.adaptiveHistory.enabled";
   const AUTOFILL = "browser.urlbar.autoFill";
   const MAX_RICH = "browser.urlbar.maxRichResults";
+  const SEARCH_FIRST = "browser.urlbar.showSearchSuggestionsFirst";
 
   function isEnabled() {
     return Services.prefs.getBoolPref(PREF, true);
@@ -25,8 +26,11 @@
       // Show more results so history hits are not crowded out by search
       // suggestions (default: 10).
       Services.prefs.setIntPref(MAX_RICH, 15);
+      // Rank history results ABOVE Google search suggestions — with search
+      // first, URL autofill never fires and visited sites get pushed down.
+      Services.prefs.setBoolPref(SEARCH_FIRST, false);
     } else {
-      for (const pref of [ADAPTIVE, AUTOFILL, MAX_RICH]) {
+      for (const pref of [ADAPTIVE, AUTOFILL, MAX_RICH, SEARCH_FIRST]) {
         if (Services.prefs.prefHasUserValue(pref)) {
           Services.prefs.clearUserPref(pref);
         }
