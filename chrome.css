@@ -3,8 +3,25 @@
 }
 
 #navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-stack,
+#navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-stack,
 #navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-icon {
   opacity: 0.5 !important;
   visibility: visible !important;
   display: flex !important;
+}
+
+/* ===== TEST: glass dropdowns marked red (temporary) =====
+ * Covers Zen/Firefox arrow panels: the "…" app menu (#appMenu-popup),
+ * downloads, extensions, overflow, bookmarks/history panels, etc.
+ * Remove once the final restyle is decided. */
+panel[type="arrow"]::part(content) {
+  background-color: rgba(255, 0, 0, 0.85) !important;
+}
+
+#appMenu-popup,
+#DownloadsPanel,
+#widget-overflow,
+#customizationui-widget-panel,
+.urlbar-view panel {
+  background-color: rgba(255, 0, 0, 0.85) !important;
 }
