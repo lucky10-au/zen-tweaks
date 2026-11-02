@@ -90,9 +90,18 @@
   width: var(--zt-dock-width, 320px);
   min-width: 0;
   overflow: clip;
-  background: var(--zen-colors-secondary, light-dark(#f9f9fa, #2b2b33));
+  background: light-dark(#ffffff, #2b2b33);
+  color: light-dark(#15141a, #fbfbfe);
   border-inline-start: 1px solid
     light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.12));
+}
+
+/* Rows inherit the browser's toolbar colours; pin them to the panel scheme so
+   text is readable on either native theme. */
+#zt-appmenu-dock toolbarbutton,
+#zt-appmenu-dock label,
+#zt-appmenu-dock .panel-header h1 {
+  color: inherit;
 }
 
 #zt-appmenu-dock > panelview {

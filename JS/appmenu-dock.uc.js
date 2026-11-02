@@ -229,7 +229,10 @@
       return realHidePopup();
     };
 
-    // Redirect subview-opening root buttons into the dock.
+    // Redirect subview-opening root buttons into the dock. MUST be capture
+    // phase: stock PanelUI.onCommand listens (bubbling) on the main view and
+    // runs first, adopting the subview into its own anchored temp popup and
+    // blanking the dock.
     els.dock.addEventListener(
       "command",
       async (e) => {
@@ -257,7 +260,7 @@
           if (!ok) stack.pop();
         }
       },
-      false
+      true
     );
 
     // Fullscreen handlers in stock code call panel.hidePopup(), which has no
@@ -271,7 +274,39 @@
         undock();
         setTimeout(() => BrowserCommands.fullScreen(), 0);
       },
-      false
+      true
+    );
+
+    // The account row opens its own anchored panel (gSync.toggleAccountPanel);
+    // user asked for the plain Sync settings page instead.
+    const accountHandler = (e) => {
+      if (!docked || !enabled()) return;
+      const t = e.target;
+      const isAccount =
+        t.id === "appMenu-fxa-label2" || !!t.closest?.("#appMenu-nova-fxa-label");
+      if (!isAccount) return;
+      e.preventDefault();
+      e.stopPropagation();
+      undock();
+      setTimeout(() => openPreferences("sync"), 0);
+    };
+    els.dock.addEventListener("command", accountHandler, true);
+    els.dock.addEventListener("click", accountHandler, true);
+
+    // Any OTHER popup opening (downloads panel, extension popups, context
+    // menus, notifications…) takes over the screen — put the dock away.
+    window.addEventListener(
+      "popupshown",
+      (e) => {
+        if (!docked || !enabled()) return;
+        const t = e.target;
+        if (t?.nodeType !== 1) return;
+        if (t.localName !== "panel" && t.localName !== "menupopup") return;
+        if (t.id === "appMenu-popup") return; // our stock panel stays hidden
+        if (t.closest("#zt-appmenu-dock")) return;
+        undock();
+      },
+      true
     );
 
     log("dock structure created");
