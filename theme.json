@@ -3,7 +3,7 @@
   "name": "Zen Tweaks",
   "description": "Small quality-of-life tweaks: Cmd+W closes the URL bar, corner toasts auto-hide after 5 s, better URL bar suggestions for visited sites, and collapsed-sidebar cleanups. Togglable per tweak in Sine settings.",
   "homepage": "https://github.com/lucky10-au/zen-tweaks",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "author": "Luca Were",
   "style": {
     "chrome": "chrome.css",
@@ -11,20 +11,31 @@
   },
   "scripts": {
     "JS/close-urlbar.uc.js": {
-      "include": ["chrome://browser/content/browser.xhtml"],
+      "include": [
+        "chrome://browser/content/browser.xhtml"
+      ],
       "loadOrder": 1
     },
     "JS/toast-timeout.uc.js": {
-      "include": ["chrome://browser/content/browser.xhtml"],
+      "include": [
+        "chrome://browser/content/browser.xhtml"
+      ],
       "loadOrder": 2
     },
     "JS/urlbar-tweaks.uc.js": {
-      "include": ["chrome://browser/content/browser.xhtml"],
+      "include": [
+        "chrome://browser/content/browser.xhtml"
+      ],
       "loadOrder": 3
     }
   },
   "preferences": "preferences.json",
   "updatedAt": "2026-11-02T20:00:00Z",
-  "tags": ["UI", "Shortcuts"],
-  "fork": ["zen"]
+  "tags": [
+    "UI",
+    "Shortcuts"
+  ],
+  "fork": [
+    "zen"
+  ]
 }

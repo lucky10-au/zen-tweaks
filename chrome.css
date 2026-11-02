@@ -3,7 +3,6 @@
 }
 
 #navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-stack,
-#navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-stack,
 #navigator-toolbox:not([zen-sidebar-expanded="true"]) .zen-current-workspace-indicator:hover .zen-current-workspace-indicator-icon {
   opacity: 0.5 !important;
   visibility: visible !important;
@@ -29,6 +28,14 @@
     --panel-box-shadow-margin: 0px !important;
     --panel-border-color: transparent !important;
     --panel-background-color: transparent !important;
+    /* native cornering: GetMenuCornerRadius() = 6px, 12px on macOS Tahoe
+     * (Zen overrides this to 10px app-wide, so force the OS values) */
+    --panel-border-radius: 6px !important;
+
+    @media (-moz-mac-tahoe-theme) {
+      --panel-border-radius: 12px !important;
+    }
+
     /* entry animations repaint the shell mid-material — flash risk */
     transition: none !important;
     animation: none !important;
@@ -40,5 +47,8 @@
     box-shadow: none !important;
     animation: none !important;
     transition: none !important;
+    /* content must clip to the glass corners */
+    border-radius: var(--panel-border-radius) !important;
+    overflow: clip !important;
   }
 }
