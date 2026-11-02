@@ -5,12 +5,17 @@
 
 (function () {
   const LOG = "[close-urlbar]";
+  const PREF = "extensions.zentweaks.close-urlbar.enabled";
   console.log(LOG, "script loaded");
 
   function isUrlbarActive() {
     const urlbar = window.gURLBar;
     if (!urlbar) return false;
     return urlbar.focused || urlbar.view?.isOpen;
+  }
+
+  function isEnabled() {
+    return Services.prefs.getBoolPref(PREF, true);
   }
 
   function closeUrlbar() {
@@ -23,6 +28,7 @@
   window.addEventListener(
     "keydown",
     (e) => {
+      if (!isEnabled()) return;
       if (!e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       if (e.key.toLowerCase() !== "w") return;
       if (!isUrlbarActive()) return;
@@ -39,7 +45,7 @@
   if (window.BrowserCommands?.closeTabOrWindow) {
     const originalClose = BrowserCommands.closeTabOrWindow.bind(BrowserCommands);
     BrowserCommands.closeTabOrWindow = function (event) {
-      if (isUrlbarActive()) {
+      if (isEnabled() && isUrlbarActive()) {
         closeUrlbar();
         return;
       }

@@ -1,0 +1,23 @@
+[
+  {
+    "property": "extensions.zentweaks.close-urlbar.enabled",
+    "type": "checkbox",
+    "label": "**⌘W closes the URL bar**",
+    "defaultValue": true,
+    "description": "When the URL bar is focused or open, Cmd+W closes it instead of the tab behind it. Changes apply immediately."
+  },
+  {
+    "property": "extensions.zentweaks.toast-timeout.enabled",
+    "type": "checkbox",
+    "label": "**Toasts disappear after 5 seconds**",
+    "defaultValue": true,
+    "description": "Corner toasts like “Link copied to clipboard” auto-hide after 5 seconds. Off = Zen's normal auto-hide (2 s)."
+  },
+  {
+    "property": "extensions.zentweaks.urlbar-tweaks.enabled",
+    "type": "checkbox",
+    "label": "**Better URL bar suggestions**",
+    "defaultValue": true,
+    "description": "Autofill pages you visit often and show up to 15 suggestions in the dropdown. Off = Zen defaults."
+  }
+]

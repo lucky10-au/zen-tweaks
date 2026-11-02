@@ -5,18 +5,37 @@
 
 (function () {
   const LOG = "[urlbar-tweaks]";
+  const PREF = "extensions.zentweaks.urlbar-tweaks.enabled";
   console.log(LOG, "script loaded");
 
-  // Complete URLs you pick often (deep pages, not just domains).
-  Services.prefs.setBoolPref(
-    "browser.urlbar.autoFill.adaptiveHistory.enabled",
-    true
-  );
+  const ADAPTIVE = "browser.urlbar.autoFill.adaptiveHistory.enabled";
+  const AUTOFILL = "browser.urlbar.autoFill";
+  const MAX_RICH = "browser.urlbar.maxRichResults";
 
-  // Make sure domain autofill is on (pref could be toggled off elsewhere).
-  Services.prefs.setBoolPref("browser.urlbar.autoFill", true);
+  function isEnabled() {
+    return Services.prefs.getBoolPref(PREF, true);
+  }
 
-  // Show more results so history hits are not crowded out by search
-  // suggestions (default: 10).
-  Services.prefs.setIntPref("browser.urlbar.maxRichResults", 15);
+  function apply(on) {
+    if (on) {
+      // Complete URLs you pick often (deep pages, not just domains).
+      Services.prefs.setBoolPref(ADAPTIVE, true);
+      // Make sure domain autofill is on.
+      Services.prefs.setBoolPref(AUTOFILL, true);
+      // Show more results so history hits are not crowded out by search
+      // suggestions (default: 10).
+      Services.prefs.setIntPref(MAX_RICH, 15);
+    } else {
+      for (const pref of [ADAPTIVE, AUTOFILL, MAX_RICH]) {
+        if (Services.prefs.prefHasUserValue(pref)) {
+          Services.prefs.clearUserPref(pref);
+        }
+      }
+    }
+  }
+
+  apply(isEnabled());
+  Services.prefs.addObserver(PREF, {
+    observe: () => apply(isEnabled()),
+  });
 })();
