@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Dock the ⋯ menu as a right sidebar
-// @description    Embed the app menu as a resizable right-hand pane that narrows the webpage
+// @description    Host the app menu's views in a resizable right-hand pane that narrows the webpage
 // ==/UserScript==
 
 (function () {
@@ -9,6 +9,8 @@
 
   const PREF_ENABLED = "extensions.zentweaks.appmenu-dock.enabled";
   const PREF_WIDTH = "extensions.zentweaks.appmenu-dock.width";
+  const MIN_WIDTH = 220;
+  const MAX_WIDTH_RATIO = 0.5;
 
   const { PanelMultiView, PanelView } = ChromeUtils.importESModule(
     "moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs"
@@ -18,10 +20,111 @@
 
   let els = null;
   let docked = false;
+  let stack = []; // view ids currently shown, root first
+  let drag = null;
 
   function log(...args) {
     console.log(LOG, ...args);
   }
+
+  const viewCache = () => document.getElementById("appMenu-viewCache");
+
+  // Back buttons created by PanelView call panelMultiView.goBack(), so our
+  // host stub supplies it.
+  const hostStub = {
+    goBack() {
+      if (stack.length > 1) {
+        stack.pop();
+        renderView(stack[stack.length - 1], null);
+      } else {
+        undock();
+      }
+    },
+  };
+
+  function labelFor(node) {
+    if (!node) return "";
+    return node.getAttribute("label") || node.textContent.trim() || "";
+  }
+
+  function returnNodeToCache(node) {
+    if (!node) return;
+    try {
+      node.panelMultiView = null;
+      const pv = PanelView.forNode(node);
+      pv.visible = false;
+      const cache = viewCache();
+      if (cache && cache.content) {
+        cache.content.appendChild(node);
+      }
+    } catch (ex) {
+      console.warn(LOG, "returnNodeToCache:", ex);
+    }
+  }
+
+  function dockedViews() {
+    return [...els.dock.children].filter(
+      (c) =>
+        c.localName === "panelview" ||
+        c.tagName === "panelview" ||
+        c.nodeName === "panelview"
+    );
+  }
+
+  // Renders exactly one panelview inside the dock: returns the previously
+  // shown one to the view cache, moves the requested one into the dock and
+  // fires its real ViewShowing listeners.
+  async function renderView(viewId, triggerNode) {
+    for (const v of dockedViews()) {
+      returnNodeToCache(v);
+    }
+    const node = PanelMultiView.getViewNode(document, viewId);
+    if (!node) {
+      console.error(LOG, "view not found:", viewId);
+      return false;
+    }
+    els.dock.appendChild(node);
+    node.panelMultiView = hostStub;
+    const pv = PanelView.forNode(node);
+    const isRoot = viewId === els.rootViewId;
+    if (isRoot) {
+      pv.mainview = true;
+      pv.headerText = "";
+    } else {
+      pv.mainview = false;
+      pv.headerText = labelFor(triggerNode) || viewId;
+    }
+    pv.minMaxWidth = 0;
+    pv.minMaxHeight = 0;
+    pv.visible = true;
+
+    let canceled = false;
+    try {
+      canceled = await pv.dispatchAsyncEvent("ViewShowing");
+    } catch (ex) {
+      console.warn(LOG, "ViewShowing error:", ex);
+    }
+    if (canceled || node.parentNode !== els.dock) {
+      log("ViewShowing canceled for", viewId);
+      return false;
+    }
+    try {
+      pv.dispatchCustomEvent("ViewShown");
+    } catch (ex) {
+      console.warn(LOG, "ViewShown:", ex);
+    }
+    return true;
+  }
+
+  // Root menu buttons that switch content are redirected into the dock;
+  // anything else keeps its real handler (passwords, settings, account…).
+  const SUBVIEWS = {
+    "appMenu-bookmarks-button": "PanelUI-bookmarks",
+    "appMenu-history-button": "PanelUI-history",
+    "appMenu-tab-groups-button": "appMenu-tabGroupsListView",
+    "appMenu-more-button2": "appmenu-moreTools",
+    "appMenu-help-button2": "PanelUI-helpView",
+  };
 
   function ensureDock() {
     if (els) return els;
@@ -29,45 +132,64 @@
     dock.id = "zt-appmenu-dock";
     dock.hidden = true;
 
-    const splitter = document.createXULElement("splitter");
+    const splitter = document.createXULElement("vbox");
     splitter.id = "zt-appmenu-dock-splitter";
-    splitter.classList.add("chromeclass-extrachrome");
-    splitter.hidden = true;
 
-    document.getElementById("browser").appendChild(splitter);
-    document.getElementById("browser").appendChild(dock);
-
-    // Remember a dragged width while dragging the splitter.
-    splitter.addEventListener("dragend", () => {
-      try {
-        Services.prefs.setIntPref(
-          PREF_WIDTH,
-          Math.round(dock.getBoundingClientRect().width)
-        );
-      } catch (ex) {
-        console.warn(LOG, "could not save width", ex);
-      }
-    });
+    const browserBox = document.getElementById("browser");
+    browserBox.appendChild(splitter);
+    browserBox.appendChild(dock);
 
     if (Services.prefs.prefHasUserValue(PREF_WIDTH)) {
-      dock.style.width =
-        Services.prefs.getIntPref(PREF_WIDTH, 320) + "px";
+      dock.style.width = Services.prefs.getIntPref(PREF_WIDTH, 320) + "px";
     }
 
-    els = {
-      dock,
-      splitter,
-      panel: document.getElementById("appMenu-popup"),
-      multiView: document.getElementById("appMenu-multiView"),
-      menuButton: document.getElementById("PanelUI-menu-button"),
-    };
+    // Hand-rolled drag (XUL splitter's frame resizing fights the flex:1
+    // content box, so we set the dock width ourselves and keep it stable).
+    splitter.addEventListener("mousedown", (e) => {
+      if (!docked || e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      drag = {
+        startX: e.clientX,
+        base: dock.getBoundingClientRect().width,
+      };
+      const move = (ev) => {
+        if (!drag) return;
+        const max = window.innerWidth * MAX_WIDTH_RATIO;
+        const width = Math.max(
+          MIN_WIDTH,
+          Math.min(max, drag.base + (drag.startX - ev.clientX))
+        );
+        dock.style.width = Math.round(width) + "px";
+      };
+      const end = (ev) => {
+        move(ev);
+        drag = null;
+        try {
+          const w = Math.round(dock.getBoundingClientRect().width);
+          if (Math.abs(w - Services.prefs.getIntPref(PREF_WIDTH, 0)) >= 2) {
+            Services.prefs.setIntPref(PREF_WIDTH, w);
+          }
+        } catch (ex) {
+          console.warn(LOG, "width save failed:", ex);
+        }
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", end);
+      };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", end);
+    });
 
     // Click outside the dock closes it.
     document.addEventListener(
       "mousedown",
       (e) => {
         if (!docked || !enabled()) return;
-        if (els.dock.contains(e.target) || els.menuButton.contains(e.target)) {
+        if (
+          els.dock.contains(e.target) ||
+          els.menuButton?.contains(e.target) ||
+          els.splitter.contains(e.target)
+        ) {
           return;
         }
         undock();
@@ -86,196 +208,130 @@
       true
     );
 
+    els = {
+      dock,
+      splitter,
+      panel: document.getElementById("appMenu-popup"),
+      menuButton: document.getElementById("PanelUI-menu-button"),
+      rootViewId: document
+        .getElementById("appMenu-multiView")
+        .getAttribute("mainViewId"),
+    };
+
+    // Some close routes (Zen-added items etc.) call panel.hidePopup()
+    // directly, which is meaningless while docked — turn those into undocks.
+    const realHidePopup = els.panel.hidePopup.bind(els.panel);
+    els.panel.hidePopup = () => {
+      if (docked) {
+        undock();
+        return;
+      }
+      return realHidePopup();
+    };
+
+    // Redirect subview-opening root buttons into the dock.
+    els.dock.addEventListener(
+      "command",
+      async (e) => {
+        if (!docked || !enabled()) return;
+        const id = e.target.id;
+        if (SUBVIEWS[id]) {
+          e.preventDefault();
+          e.stopPropagation();
+          stack.push(SUBVIEWS[id]);
+          // Match stock "More Tools" behavior: notify DevTools the view is showing.
+          if (SUBVIEWS[id] === "appmenu-moreTools") {
+            try {
+              const view = document.getElementById(
+                "appmenu-developer-tools-view"
+              );
+              Services.obs.notifyObservers(
+                view,
+                "web-developer-tools-view-showing"
+              );
+            } catch (ex) {
+              console.warn(LOG, "devtools notify:", ex);
+            }
+          }
+          const ok = await renderView(SUBVIEWS[id], e.target);
+          if (!ok) stack.pop();
+        }
+      },
+      false
+    );
+
+    // Fullscreen handlers in stock code call panel.hidePopup(), which has no
+    // meaning in the dock; replicate the stock end result ourselves.
+    els.dock.addEventListener(
+      "command",
+      (e) => {
+        if (!docked || e.target.id !== "appMenu-fullscreen-button2") return;
+        e.preventDefault();
+        e.stopPropagation();
+        undock();
+        setTimeout(() => BrowserCommands.fullScreen(), 0);
+      },
+      false
+    );
+
     log("dock structure created");
     return els;
   }
 
   async function openDock() {
+    if (!enabled()) return;
+    if (document.documentElement.hasAttribute("customizing")) return;
     if (docked) {
       undock();
       return;
     }
-    const { dock, splitter, panel, multiView } = ensureDock();
-    if (document.documentElement.hasAttribute("customizing")) return;
+    const { dock, splitter, panel, rootViewId } = ensureDock();
     try {
-      panel.hidden = false;
-      panel.setAttribute("zt-docked", "true");
-      dock.appendChild(panel);
+      // Make sure the real popup is not mid-session before we take the views.
+      if (panel.state === "open" || panel.state === "showing") {
+        PanelUI.hide();
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      await PanelUI.ensureReady();
+      try {
+        PanelUI._ensureShortcutsShown?.();
+      } catch (ex) {
+        console.warn(LOG, "shortcuts:", ex);
+      }
+
+      stack = [rootViewId];
       dock.hidden = false;
       splitter.hidden = false;
-
-      const pmv = PanelMultiView.forNode(multiView);
-      if (!pmv.connected) {
-        pmv.connect();
-      }
-      // Mimic popupshowing (adds key navigation + panelopen styling).
-      panel.dispatchEvent(new Event("popupshowing", { bubbles: true }));
-
-      // Import the main view, replicating PanelMultiView#showMainView.
-      const mainViewNode = PanelMultiView.getViewNode(
-        document,
-        multiView.getAttribute("mainViewId")
-      );
-      if (mainViewNode.panelMultiView && mainViewNode.panelMultiView !== multiView) {
-        PanelMultiView.forNode(mainViewNode.panelMultiView).hidePopup();
-      }
-      pmv._viewStack.appendChild(mainViewNode);
-      mainViewNode.panelMultiView = multiView;
-      const pv = PanelView.forNode(mainViewNode);
-      pmv.openViews.push(pv);
-      pv.mainview = true;
-      pv.headerText = "";
-      pv.minMaxWidth = 0;
-      pv.minMaxHeight = 0;
-      pv.visible = true;
-
-      let canceled = false;
-      try {
-        canceled = await pv.dispatchAsyncEvent("ViewShowing");
-      } catch (ex) {
-        console.warn(LOG, "ViewShowing error:", ex);
-      }
-      if (canceled || !pmv.openViews.includes(pv)) {
-        log("ViewShowing canceled, undocking");
-        await undock();
+      const shown = await renderView(rootViewId, null);
+      if (!shown) {
+        log("main view canceled, reverting");
+        stack = [];
+        for (const v of dockedViews()) returnNodeToCache(v);
+        dock.hidden = true;
+        splitter.hidden = true;
         return;
-      }
-
-      // Mimic popupshown: activates the main view, dispatches ViewShown.
-      panel.dispatchEvent(new Event("popupshown", { bubbles: true }));
-      panel.setAttribute("mainviewshowing", "true");
-      try {
-        CustomizableUI.addPanelCloseListeners(panel);
-      } catch (ex) {
-        console.warn(LOG, "addPanelCloseListeners:", ex);
       }
       docked = true;
       log("docked");
-      dumpDebug(panel, multiView);
     } catch (ex) {
-      console.error(LOG, "failed to dock, restoring popup:", ex);
-      await undock();
-    }
-  }
-
-  function rect(el) {
-    if (!el) return "null";
-    const r = el.getBoundingClientRect();
-    return `${Math.round(r.width)}x${Math.round(r.height)} @${Math.round(r.left)},${Math.round(r.top)}`;
-  }
-
-  function matchingRules(el) {
-    const out = [];
-    for (const sheet of document.styleSheets) {
-      let rules;
-      try {
-        rules = sheet.cssRules;
-      } catch (ex) {
-        continue;
-      }
-      const href = sheet.href || "(no href)";
-      for (const rule of rules) {
-        if (rule.type !== 1 || !rule.selectorText) continue;
-        let matches = false;
-        try {
-          matches = el.matches(rule.selectorText);
-        } catch (ex) {}
-        if (!matches) continue;
-        const pos = rule.style.getPropertyValue("position");
-        const disp = rule.style.getPropertyValue("display");
-        if (pos || disp) {
-          out.push(`${href.slice(-60)} :: ${rule.selectorText} -> position=${pos}${rule.style.getPropertyPriority("position") !== "" ? "!" : ""} display=${disp}`);
-        }
-      }
-    }
-    return out;
-  }
-
-  function dumpDebug(panel, multiView) {
-    try {
-      const pmv = PanelMultiView.forNode(multiView);
-      log("--- dock debug start ---");
-      log("panel.state:", panel.state, "hidden:", panel.hidden, "rect:", rect(panel));
-      log("dock rect:", rect(els.dock), "dock computed display:", getComputedStyle(els.dock).display);
-      const cs = getComputedStyle(panel);
-      log(
-        "panel computed: display=" + cs.display,
-        "position=" + cs.position,
-        "visibility=" + cs.visibility,
-        "contain=" + cs.contain
-      );
-      log("rules affecting panel position/display:");
-      for (const line of matchingRules(panel)) log("  ", line);
-      // Empirical test: does an inline !important win over the cascade?
-      const before = getComputedStyle(panel).position;
-      panel.style.setProperty("position", "static", "important");
-      const after = getComputedStyle(panel).position;
-      panel.style.removeProperty("position");
-      log("inline important test: before=" + before, "after=" + after);
-      log("multiView rect:", rect(multiView), "computed display:", getComputedStyle(multiView).display);
-      const inDoc = document.getElementById(multiView.getAttribute("mainViewId"));
-      log(
-        "main view in document:", !!inDoc,
-        "template present:", !!document.getElementById("appMenu-viewCache")
-      );
-      log("pmv.connected:", pmv.connected, "openViews:", pmv.openViews?.length);
-      log(
-        "multiView children:",
-        [...multiView.children].map((c) => c.localName + "#" + (c.id || c.classList[0])).join(", ") || "(none)"
-      );
-      const vc = pmv._viewContainer;
-      const vs = pmv._viewStack;
-      log("viewContainer rect:", rect(vc), "css display:", vc && getComputedStyle(vc).display);
-      log("viewStack rect:", rect(vs), "children:", vs && vs.children.length);
-      const views = vs ? [...vs.children] : [];
-      for (const v of views) {
-        log(
-          "view:",
-          v.localName + "#" + (v.id || "?"),
-          "visibleattr:", v.hasAttribute("visible"),
-          "mainview:", v.getAttribute("mainview"),
-          "rect:", rect(v),
-          "css:", (c => `display=${c.display} visibility=${c.visibility} overflow=${c.overflow}`)(getComputedStyle(v))
-        );
-        log("view innerHTML length:", v.innerHTML.length);
-      }
-      log("--- dock debug end ---");
-    } catch (ex) {
-      console.error(LOG, "debug dump failed:", ex);
+      console.error(LOG, "failed to dock:", ex);
+      stack = [];
+      for (const v of dockedViews()) returnNodeToCache(v);
+      dock.hidden = true;
+      splitter.hidden = true;
     }
   }
 
   function undock() {
     if (!els || !docked) return;
     docked = false;
-    const { dock, splitter, panel, multiView } = els;
-    try {
-      const pmv = PanelMultiView.forNode(multiView);
-      try {
-        CustomizableUI.removePanelCloseListeners(panel);
-      } catch (ex) {
-        console.warn(LOG, "removePanelCloseListeners:", ex);
-      }
-      // Fire the full close sequence: views close, nav listeners detach,
-      // PanelUI resets its button state.
-      panel.dispatchEvent(new Event("popuphiding", { bubbles: true }));
-      panel.dispatchEvent(new Event("popuphidden", { bubbles: true }));
-      try {
-        pmv._moveOutKids();
-      } catch (ex) {
-        console.warn(LOG, "moveOutKids:", ex);
-      }
-      const popupSet =
-        document.getElementById("mainPopupSet") ||
-        panel.parentNode;
-      popupSet.appendChild(panel);
-      panel.hidden = true;
-      panel.removeAttribute("zt-docked");
-    } finally {
-      dock.hidden = true;
-      splitter.hidden = true;
-      log("undocked");
-    }
+    stack = [];
+    const { dock, splitter, menuButton } = els;
+    for (const v of dockedViews()) returnNodeToCache(v);
+    dock.hidden = true;
+    splitter.hidden = true;
+    menuButton?.removeAttribute("open");
+    log("undocked");
   }
 
   // Intercept the ⋯ button: capture-phase so PanelUI's own mousedown/keypress
@@ -283,7 +339,7 @@
   // popup when off).
   function interceptButton() {
     const menuButton = document.getElementById("PanelUI-menu-button");
-    menuButton.addEventListener(
+    menuButton?.addEventListener(
       "mousedown",
       (e) => {
         if (!enabled()) return;
@@ -294,7 +350,7 @@
       },
       true
     );
-    menuButton.addEventListener(
+    menuButton?.addEventListener(
       "keypress",
       (e) => {
         if (!enabled()) return;

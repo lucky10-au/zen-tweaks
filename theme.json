@@ -1,9 +1,9 @@
 {
   "id": "c5vz4zi4l-yvtklwwb2-vnb35ev30",
   "name": "Zen Tweaks",
-  "description": "Small quality-of-life tweaks: Cmd+W closes the URL bar, corner toasts auto-hide after 5 s, better URL bar suggestions, video PiP button removed, glass dropdown restyle, animated ⋯ menu (corner pin or right sidebar dock), fullscreen banner shrunk, and collapsed-sidebar cleanups. Togglable per tweak in Sine settings.",
+  "description": "Collapses workspace dots CSS, ⌘W closes the URL bar, 5s toasts, URL bar autofill tweaks, native-style dropdowns with ⋯ corner pinning or right sidebar dock (experimental), video PiP button removed, fullscreen banner shrunk. Each tweak togglable in Sine settings (except the permanent workspace-dots CSS).",
   "homepage": "https://github.com/lucky10-au/zen-tweaks",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "author": "Luca Were",
   "style": {
     "chrome": "chrome.css",
@@ -48,7 +48,7 @@
     }
   },
   "preferences": "preferences.json",
-  "updatedAt": "2026-11-03T14:00:00Z",
+  "updatedAt": "2026-11-03T15:00:00Z",
   "tags": [
     "UI",
     "Shortcuts"

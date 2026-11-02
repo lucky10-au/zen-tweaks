@@ -39,6 +39,6 @@
     "type": "checkbox",
     "label": "**Dock the ⋯ menu as a right sidebar**",
     "defaultValue": false,
-    "description": "Experimental: the ⋯ app menu opens as a resizable panel on the right side of the window instead of a popup, and the page area shrinks to fit. Drag the divider to resize. Off = normal popup. Turning it off undocks the menu immediately."
+    "description": "Experimental. Opens the ⋯ app menu as a resizable right sidebar (drag the divider), next to the page. Off = normal popup. Subviews to unexposed destinations open as small anchored popups. Restart Zen after enabling the toggle the first time."
   }
 ]
