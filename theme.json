@@ -1,7 +1,7 @@
 {
   "id": "c5vz4zi4l-yvtklwwb2-vnb35ev30",
   "name": "Zen Tweaks",
-  "description": "Hides the space options dots in collapsed mode and makes Cmd+W close the URL bar first.",
+  "description": "Small quality-of-life tweaks: Cmd+W closes the URL bar, corner toasts auto-hide after 5 s, better URL bar suggestions for visited sites, and collapsed-sidebar cleanups. Togglable per tweak in Sine settings.",
   "homepage": "https://github.com/lucky10-au/zen-tweaks",
   "version": "1.4.0",
   "author": "Luca Were",
