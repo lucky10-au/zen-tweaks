@@ -10,18 +10,35 @@
   display: flex !important;
 }
 
-/* ===== TEST: glass dropdowns marked red (temporary) =====
- * Covers Zen/Firefox arrow panels: the "…" app menu (#appMenu-popup),
- * downloads, extensions, overflow, bookmarks/history panels, etc.
- * Remove once the final restyle is decided. */
-panel[type="arrow"]::part(content) {
-  background-color: rgba(255, 0, 0, 0.85) !important;
-}
+/* ===== Native macOS menu material for arrow panels =====
+ * Reverses Firefox's opt-out (popup.css: panel:where([type="arrow"])
+ * { appearance: none }) so these panels render with the real native macOS
+ * menu material — vibrancy glass, system corners, system shadow — the same
+ * treatment context menus get. Known limitations (accepted):
+ * - rows inside panels keep Zen styling (hybrid look);
+ * - entry animations disabled (they fight the native material);
+ * - extension popups excluded (they host web content);
+ * - native vibrancy follows system light/dark, not the theme. */
+@media (-moz-platform: macos) {
+  panel[type="arrow"]:not(#feature-callout):not(#customizationui-widget-panel) {
+    appearance: auto !important;
+    -moz-default-appearance: menupopup !important;
+    background-color: Menu !important;
+    /* the native look draws its own corners and shadow */
+    --panel-box-shadow: none !important;
+    --panel-box-shadow-margin: 0px !important;
+    --panel-border-color: transparent !important;
+    --panel-background-color: transparent !important;
+    /* entry animations repaint the shell mid-material — flash risk */
+    transition: none !important;
+    animation: none !important;
+  }
 
-#appMenu-popup,
-#DownloadsPanel,
-#widget-overflow,
-#customizationui-widget-panel,
-.urlbar-view panel {
-  background-color: rgba(255, 0, 0, 0.85) !important;
+  panel[type="arrow"]:not(#feature-callout):not(#customizationui-widget-panel)::part(content) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
 }
