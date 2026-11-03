@@ -90,17 +90,24 @@
   width: var(--zt-dock-width, 320px);
   min-width: 0;
   overflow: clip;
-  /* Resolve every light-dark() inside the dock (ours and Zen's panel
-     tokens) against the light scheme — the dark palette was painting the
-     dock nearly black even in light themes. */
-  color-scheme: light;
-  background: var(--zen-colors-tertiary, #f9f9fa);
-  color: light-dark(#15141a, #15141a);
-  border-inline-start: 1px solid rgb(0 0 0 / 0.08);
+  /* Match the chrome surfaces around the dock: Zen paints toolbars with
+     --zen-themed-toolbar-bg-transparent (dark = #171717) and sets the
+     correct scheme on #browser, which the dock lives in — so light-dark()
+     tokens inside the dock resolve to the same mode as the rest of the
+     UI. Do NOT pin color-scheme here. */
+  background: var(
+    --zen-themed-toolbar-bg-transparent,
+    var(--zen-branding-bg, light-dark(#e2e2e2, #171717))
+  );
+  color: inherit;
+  border-inline-start: 1px solid var(
+    --zen-colors-border,
+    light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.08))
+  );
 }
 
-/* Rows inherit the browser's toolbar colours; pin them to the panel scheme so
-   text is readable on either native theme. */
+/* Rows keep their stock menu token colours (--button-text-color-menu etc.,
+   resolved by the dock's inherited scheme); inherit only fills gaps. */
 #zt-appmenu-dock toolbarbutton,
 #zt-appmenu-dock label,
 #zt-appmenu-dock .panel-header h1 {
