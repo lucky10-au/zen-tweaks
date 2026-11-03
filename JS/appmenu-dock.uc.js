@@ -16,6 +16,59 @@
     "moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs"
   );
 
+  // Widgets that lazily populate the History/Bookmarks sub-views. In the
+  // stock popup, CustomizableUI wires ViewShowing handlers; our dock must
+  // drive them itself.
+  let _widgets = null;
+  function historyWidget() {
+    if (!_widgets) {
+      _widgets = ChromeUtils.importESModule(
+        "moz-src:///browser/components/customizableui/CustomizableWidgets.sys.mjs"
+      ).CustomizableWidgets;
+    }
+    return _widgets.find((w) => w.id === "history-panelmenu");
+  }
+
+  function populateView(viewId, node) {
+    try {
+      if (viewId === "PanelUI-history") {
+        historyWidget()?.onViewShowing?.({ type: "ViewShowing", target: node });
+      } else if (viewId === "PanelUI-bookmarks") {
+        window.BookmarkingUI?.onPanelMenuViewShowing?.({
+          type: "ViewShowing",
+          target: node,
+        });
+      }
+    } catch (ex) {
+      console.warn(LOG, "populate failed:", viewId, ex);
+    }
+  }
+
+  // Mirror of the stock PanelMultiViewHidden cleanup so the widgets stop
+  // listening (and PlacesPanelview stops observing) after undock.
+  function cleanupWidgets() {
+    try {
+      const node = PanelMultiView.getViewNode(document, "PanelUI-history");
+      historyWidget()?.onPanelMultiViewHidden?.({
+        type: "PanelMultiViewHidden",
+        target: node,
+      });
+    } catch (ex) {
+      console.warn(LOG, "history cleanup:", ex);
+    }
+    try {
+      const node = PanelMultiView.getViewNode(document, "PanelUI-bookmarks");
+      if (node && window.BookmarkingUI?._panelMenuView) {
+        window.BookmarkingUI.onPanelMenuViewHiding({
+          type: "ViewHiding",
+          target: node,
+        });
+      }
+    } catch (ex) {
+      console.warn(LOG, "bookmarks cleanup:", ex);
+    }
+  }
+
   const enabled = () => Services.prefs.getBoolPref(PREF_ENABLED, false);
 
   let els = null;
@@ -40,6 +93,10 @@
         undock();
       }
     },
+    // The History widget listens on panelview.panelMultiView; keep those
+    // calls harmless on our stub.
+    addEventListener() {},
+    removeEventListener() {},
   };
 
   function labelFor(node) {
@@ -113,6 +170,7 @@
     } catch (ex) {
       console.warn(LOG, "ViewShown:", ex);
     }
+    populateView(viewId, node);
     return true;
   }
 
@@ -124,6 +182,8 @@
     "appMenu-tab-groups-button": "appMenu-tabGroupsListView",
     "appMenu-more-button2": "appmenu-moreTools",
     "appMenu-help-button2": "PanelUI-helpView",
+    "appMenuRecentlyClosedTabs": "appMenu-library-recentlyClosedTabs",
+    "appMenuRecentlyClosedWindows": "appMenu-library-recentlyClosedWindows",
   };
 
   function ensureDock() {
@@ -363,6 +423,7 @@
     stack = [];
     const { dock, splitter, menuButton } = els;
     for (const v of dockedViews()) returnNodeToCache(v);
+    cleanupWidgets();
     dock.hidden = true;
     splitter.hidden = true;
     menuButton?.removeAttribute("open");

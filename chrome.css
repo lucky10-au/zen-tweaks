@@ -90,10 +90,13 @@
   width: var(--zt-dock-width, 320px);
   min-width: 0;
   overflow: clip;
-  background: light-dark(#ffffff, #2b2b33);
-  color: light-dark(#15141a, #fbfbfe);
-  border-inline-start: 1px solid
-    light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.12));
+  /* Resolve every light-dark() inside the dock (ours and Zen's panel
+     tokens) against the light scheme — the dark palette was painting the
+     dock nearly black even in light themes. */
+  color-scheme: light;
+  background: var(--zen-colors-tertiary, #f9f9fa);
+  color: light-dark(#15141a, #15141a);
+  border-inline-start: 1px solid rgb(0 0 0 / 0.08);
 }
 
 /* Rows inherit the browser's toolbar colours; pin them to the panel scheme so
