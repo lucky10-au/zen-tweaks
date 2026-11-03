@@ -450,6 +450,33 @@
         for (const [key, samples] of hist) {
           console.log(LOG, "colour:", key, "←", samples.join("  ·  "));
         }
+        // The dock element itself and every ancestor up to the window root:
+        // any opacity/filter/blend dimming applied ABOVE the histogram's
+        // subtree shows up here.
+        console.log(
+          LOG,
+          "dock-self:",
+          "opacity=" + cs.opacity,
+          "filter=" + cs.filter,
+          "bg=" + cs.backgroundColor,
+          "inactive=" + document.documentElement.matches(":-moz-window-inactive"),
+          "greyOutInactive=" +
+            Services.prefs.getBoolPref("zen.view.grey-out-inactive-windows", false)
+        );
+        for (let p = dock.parentElement; p; p = p.parentElement) {
+          const acs = getComputedStyle(p);
+          const tag =
+            p.tagName + "#" + p.id + "." + (p.className || "").trim().split(/\s+/)[0];
+          console.log(
+            LOG,
+            "ancestor:",
+            tag,
+            "opacity=" + acs.opacity,
+            "filter=" + acs.filter,
+            "backdrop=" + acs.backdropFilter,
+            "blend=" + acs.mixBlendMode
+          );
+        }
       } catch (ex) {}
     } catch (ex) {
       console.error(LOG, "failed to dock:", ex);
