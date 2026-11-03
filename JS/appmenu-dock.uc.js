@@ -424,13 +424,25 @@
           "dockBg=" + cs.backgroundColor
         );
         // Full histogram: every element with visible text/icon colour inside
-        // the dock, grouped by resolved color + opacity, with sample paths.
+        // the dock, grouped by resolved paint-relevant properties, with
+        // sample paths. Ancestor opacity is multiplied in separately so a
+        // dimming wrapper can't hide behind each element reading 1.
         const hist = new Map();
         for (const el of dock.querySelectorAll("*")) {
           const els = getComputedStyle(el);
           if (els.visibility !== "visible" && els.display === "none") continue;
+          let ancestorOpacity = 1;
+          for (let p = el.parentElement; p && p !== dock.parentElement; p = p.parentElement) {
+            ancestorOpacity *= parseFloat(getComputedStyle(p).opacity) || 1;
+          }
           const key =
-            els.color + " | opacity=" + els.opacity + " | fill=" + els.fill;
+            els.color +
+            " | opacity=" + (parseFloat(els.opacity) * ancestorOpacity).toFixed(2) +
+            " | blend=" + els.mixBlendMode +
+            " | filter=" + (els.filter === "none" ? "" : els.filter) +
+            " | clip=" + (els.backgroundClip === "text" ? "TEXT" : "") +
+            " | shadow=" + (els.textShadow === "none" ? "" : "yes") +
+            " | fill=" + els.fill;
           if (!hist.has(key)) hist.set(key, []);
           if (hist.get(key).length < 3 && el.textContent.trim())
             hist.get(key).push(el.tagName + "#" + el.id + "." + el.className);
