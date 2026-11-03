@@ -92,7 +92,7 @@
   overflow: clip;
   /* Canary read by [appmenu-dock] palette debug: proves which chrome.css
      revision the browser is actually using. */
-  --zt-css-version: 7;
+  --zt-css-version: 8;
   /* Stop betting on light-dark() resolution inside the dock: hardcode the
      light palette by default and the exact dark palette under Zen's own
      dark-mode attribute (zen-should-be-dark-mode on :root). Background
@@ -121,14 +121,8 @@
 #zt-appmenu-dock,
 #zt-appmenu-dock * {
   color: var(--zt-row-text) !important;
-  opacity: 1 !important;
-}
-
-#zt-appmenu-dock toolbarbutton .toolbarbutton-icon,
-#zt-appmenu-dock .subviewbutton-icon,
-#zt-appmenu-dock image,
-#zt-appmenu-dock svg {
   fill: var(--zt-row-text) !important;
+  opacity: 1 !important;
 }
 
 #zt-appmenu-dock toolbarbutton:hover:not([disabled]) {
