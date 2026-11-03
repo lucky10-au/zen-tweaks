@@ -90,21 +90,27 @@
   width: var(--zt-dock-width, 320px);
   min-width: 0;
   overflow: clip;
-  /* Match the chrome surfaces around the dock: Zen paints toolbars with
-     --zen-themed-toolbar-bg-transparent (dark = #171717) and sets the
-     correct scheme on #browser, which the dock lives in — so light-dark()
-     tokens inside the dock resolve to the same mode as the rest of the
-     UI. Do NOT pin color-scheme here. Background is correct, so text/
-     hover use the same scheme-aware light-dark() pattern instead of
-     inherited colours or stock hover tokens. */
-  --zt-row-text: light-dark(#15141a, #ffffff);
-  --zt-row-hover-bg: light-dark(rgb(0 0 0 / 0.06), rgb(255 255 255 / 0.12));
-  --zt-row-active-bg: light-dark(rgb(0 0 0 / 0.11), rgb(255 255 255 / 0.18));
+  /* Canary read by [appmenu-dock] palette debug: proves which chrome.css
+     revision the browser is actually using. */
+  --zt-css-version: 6;
+  /* Stop betting on light-dark() resolution inside the dock: hardcode the
+     light palette by default and the exact dark palette under Zen's own
+     dark-mode attribute (zen-should-be-dark-mode on :root). Background
+     keeps its working token chain. */
+  --zt-row-text: #15141a;
+  --zt-row-hover-bg: rgb(0 0 0 / 0.06);
+  --zt-row-active-bg: rgb(0 0 0 / 0.11);
   background: var(
     --zen-themed-toolbar-bg-transparent,
-    var(--zen-branding-bg, light-dark(#e2e2e2, #171717))
+    var(--zen-branding-bg, #e2e2e2)
   );
   color: var(--zt-row-text);
+}
+
+:root[zen-should-be-dark-mode='true'] #zt-appmenu-dock {
+  --zt-row-text: #ffffff;
+  --zt-row-hover-bg: rgb(255 255 255 / 0.12);
+  --zt-row-active-bg: rgb(255 255 255 / 0.18);
 }
 
 /* Rows: force the same scheme-aware text and hover pairs as the dock

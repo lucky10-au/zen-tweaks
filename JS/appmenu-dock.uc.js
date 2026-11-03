@@ -408,6 +408,28 @@
       }
       docked = true;
       log("docked");
+      // Temporary palette diagnosis: prints which chrome.css revision won
+      // (--zt-css-version canary) and the colours actually resolved on the
+      // dock and one row. Remove once contrast is settled.
+      try {
+        const cs = getComputedStyle(dock);
+        const sample = dock.querySelector("toolbarbutton");
+        console.log(
+          LOG,
+          "palette debug:",
+          "css=" + (cs.getPropertyValue("--zt-css-version").trim() || "MISSING"),
+          "rootDark=" + document.documentElement.getAttribute("zen-should-be-dark-mode"),
+          "mqDark=" + matchMedia("(prefers-color-scheme: dark)").matches,
+          "dockScheme=" + cs.getPropertyValue("color-scheme").trim(),
+          "rowText=" + cs.getPropertyValue("--zt-row-text").trim(),
+          "dockColor=" + cs.color,
+          "dockBg=" + cs.backgroundColor,
+          sample
+            ? "row=" + (sample.id || sample.className) +
+              " rowColor=" + getComputedStyle(sample).color
+            : "row=none"
+        );
+      } catch (ex) {}
     } catch (ex) {
       console.error(LOG, "failed to dock:", ex);
       stack = [];
