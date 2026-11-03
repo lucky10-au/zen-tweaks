@@ -413,7 +413,6 @@
       // dock and one row. Remove once contrast is settled.
       try {
         const cs = getComputedStyle(dock);
-        const sample = dock.querySelector("toolbarbutton");
         console.log(
           LOG,
           "palette debug:",
@@ -422,13 +421,23 @@
           "mqDark=" + matchMedia("(prefers-color-scheme: dark)").matches,
           "dockScheme=" + cs.getPropertyValue("color-scheme").trim(),
           "rowText=" + cs.getPropertyValue("--zt-row-text").trim(),
-          "dockColor=" + cs.color,
-          "dockBg=" + cs.backgroundColor,
-          sample
-            ? "row=" + (sample.id || sample.className) +
-              " rowColor=" + getComputedStyle(sample).color
-            : "row=none"
+          "dockBg=" + cs.backgroundColor
         );
+        // Full histogram: every element with visible text/icon colour inside
+        // the dock, grouped by resolved color + opacity, with sample paths.
+        const hist = new Map();
+        for (const el of dock.querySelectorAll("*")) {
+          const els = getComputedStyle(el);
+          if (els.visibility !== "visible" && els.display === "none") continue;
+          const key =
+            els.color + " | opacity=" + els.opacity + " | fill=" + els.fill;
+          if (!hist.has(key)) hist.set(key, []);
+          if (hist.get(key).length < 3 && el.textContent.trim())
+            hist.get(key).push(el.tagName + "#" + el.id + "." + el.className);
+        }
+        for (const [key, samples] of hist) {
+          console.log(LOG, "colour:", key, "←", samples.join("  ·  "));
+        }
       } catch (ex) {}
     } catch (ex) {
       console.error(LOG, "failed to dock:", ex);
