@@ -97,18 +97,14 @@
      UI. Do NOT pin color-scheme here. Background is correct, so text/
      hover use the same scheme-aware light-dark() pattern instead of
      inherited colours or stock hover tokens. */
-  --zt-row-text: light-dark(#15141a, #fbfbfe);
-  --zt-row-hover-bg: light-dark(rgb(0 0 0 / 0.06), rgb(251 251 254 / 0.08));
-  --zt-row-active-bg: light-dark(rgb(0 0 0 / 0.11), rgb(251 251 254 / 0.15));
+  --zt-row-text: light-dark(#15141a, #ffffff);
+  --zt-row-hover-bg: light-dark(rgb(0 0 0 / 0.06), rgb(255 255 255 / 0.12));
+  --zt-row-active-bg: light-dark(rgb(0 0 0 / 0.11), rgb(255 255 255 / 0.18));
   background: var(
     --zen-themed-toolbar-bg-transparent,
     var(--zen-branding-bg, light-dark(#e2e2e2, #171717))
   );
   color: var(--zt-row-text);
-  border-inline-start: 1px solid var(
-    --zen-colors-border,
-    light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.08))
-  );
 }
 
 /* Rows: force the same scheme-aware text and hover pairs as the dock
@@ -122,6 +118,15 @@
 
 #zt-appmenu-dock toolbarbutton {
   color: var(--zt-row-text) !important;
+}
+
+#zt-appmenu-dock toolbarbutton .toolbarbutton-text,
+#zt-appmenu-dock toolbarbutton label {
+  color: inherit !important;
+}
+
+#zt-appmenu-dock toolbarbutton .toolbarbutton-icon {
+  fill: var(--zt-row-text) !important;
 }
 
 #zt-appmenu-dock toolbarbutton:hover:not([disabled]) {
