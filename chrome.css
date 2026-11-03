@@ -94,24 +94,43 @@
      --zen-themed-toolbar-bg-transparent (dark = #171717) and sets the
      correct scheme on #browser, which the dock lives in — so light-dark()
      tokens inside the dock resolve to the same mode as the rest of the
-     UI. Do NOT pin color-scheme here. */
+     UI. Do NOT pin color-scheme here. Background is correct, so text/
+     hover use the same scheme-aware light-dark() pattern instead of
+     inherited colours or stock hover tokens. */
+  --zt-row-text: light-dark(#15141a, #fbfbfe);
+  --zt-row-hover-bg: light-dark(rgb(0 0 0 / 0.06), rgb(251 251 254 / 0.08));
+  --zt-row-active-bg: light-dark(rgb(0 0 0 / 0.11), rgb(251 251 254 / 0.15));
   background: var(
     --zen-themed-toolbar-bg-transparent,
     var(--zen-branding-bg, light-dark(#e2e2e2, #171717))
   );
-  color: inherit;
+  color: var(--zt-row-text);
   border-inline-start: 1px solid var(
     --zen-colors-border,
     light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.08))
   );
 }
 
-/* Rows keep their stock menu token colours (--button-text-color-menu etc.,
-   resolved by the dock's inherited scheme); inherit only fills gaps. */
+/* Rows: force the same scheme-aware text and hover pairs as the dock
+   background resolves with (stock .subviewbutton tokens resolve by a
+   different scheme chain than the one that got the background right). */
 #zt-appmenu-dock toolbarbutton,
 #zt-appmenu-dock label,
 #zt-appmenu-dock .panel-header h1 {
   color: inherit;
+}
+
+#zt-appmenu-dock toolbarbutton {
+  color: var(--zt-row-text) !important;
+}
+
+#zt-appmenu-dock toolbarbutton:hover:not([disabled]) {
+  background-color: var(--zt-row-hover-bg) !important;
+}
+
+#zt-appmenu-dock toolbarbutton:active,
+#zt-appmenu-dock toolbarbutton[open] {
+  background-color: var(--zt-row-active-bg) !important;
 }
 
 #zt-appmenu-dock > panelview {
