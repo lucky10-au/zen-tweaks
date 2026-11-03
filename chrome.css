@@ -92,7 +92,7 @@
   overflow: clip;
   /* Canary read by [appmenu-dock] palette debug: proves which chrome.css
      revision the browser is actually using. */
-  --zt-css-version: 9;
+  --zt-css-version: 10;
   /* Stop betting on light-dark() resolution inside the dock: hardcode the
      light palette by default and the exact dark palette under Zen's own
      dark-mode attribute (zen-should-be-dark-mode on :root). Background

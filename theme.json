@@ -3,7 +3,7 @@
   "name": "Zen Tweaks",
   "description": "Collapses workspace dots CSS, \u2318W closes the URL bar, 5s toasts, URL bar autofill tweaks, native-style dropdowns with \u22ef corner pinning or right sidebar dock (experimental), video PiP button removed, fullscreen banner shrunk. Each tweak togglable in Sine settings (except the permanent workspace-dots CSS).",
   "homepage": "https://github.com/lucky10-au/zen-tweaks",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "author": "Luca Were",
   "style": {
     "chrome": "chrome.css",
@@ -48,7 +48,7 @@
     }
   },
   "preferences": "preferences.json",
-  "updatedAt": "2026-11-04T02:00:00Z",
+  "updatedAt": "2026-11-04T03:30:00Z",
   "tags": [
     "UI",
     "Shortcuts"

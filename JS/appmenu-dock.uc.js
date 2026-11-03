@@ -407,36 +407,50 @@
         return;
       }
       docked = true;
-      // Temporary paint diagnosis: two lime probes (one INSIDE the dock,
-      // one OUTSIDE it in the browser row) plus canvas.drawWindow of both
-      // regions. If drawWindow shows pure colours but the screen shows dim
-      // ones, the dimming is below Gecko (a native macOS material painted
-      // over the window). If drawWindow is also dim, it is a Gecko layer.
+      // Temporary paint diagnosis v2: lime probe FAMILY at five tree spots
+      // (dock child, browser row, app content wrapper, toolbox, fixed at
+      // window root) + drawWindow sampling of each + getAnimations dump +
+      // attribute MutationObserver. The bright/dim boundary between probes
+      // locates the layer that multiplies paint by ~0.35.
       try {
-        const mkProbe = (id) => {
+        const mkProbe = (id, fixed) => {
           let p = document.getElementById(id);
           if (p && p.parentNode) return p;
           p = document.createXULElement("vbox");
           p.id = id;
-          p.setAttribute("style",
-            "flex:none;height:40px;background:rgb(0,255,0);" +
-            "align-items:center;justify-content:center;" +
-            "color:rgb(0,0,255);font-weight:800");
+          p.setAttribute(
+            "style",
+            (fixed
+              ? "position:fixed;left:120px;top:160px;"
+              : "flex:none;") +
+              "width:110px;height:28px;background:rgb(0,255,0);" +
+              "align-items:center;justify-content:center;" +
+              "color:rgb(0,0,255);font-weight:800;z-index:2147483646"
+          );
           p.textContent = id;
           return p;
         };
-        const probeIn = mkProbe("zt-probe-in");
-        const probeOut = mkProbe("zt-probe-out");
-        if (probeIn.parentNode !== dock) {
-          probeIn.remove();
-          dock.appendChild(probeIn);
+        const targets = [
+          ["zt-probe-dock", dock, false],
+          ["zt-probe-brow", dock.parentElement, false],
+          ["zt-probe-wrap",
+            (document.getElementById("zen-appcontent-wrapper") ||
+              document.body), false],
+          ["zt-probe-tool",
+            (document.getElementById("navigator-toolbox") ||
+              document.body), false],
+          ["zt-probe-root", document.documentElement, true],
+        ];
+        const probes = [];
+        for (const [id, parent, fixed] of targets) {
+          const p = mkProbe(id, fixed);
+          if (p.parentNode !== parent) {
+            p.remove();
+            parent.appendChild(p);
+          }
+          p.hidden = false;
+          probes.push(p);
         }
-        if (probeOut.parentNode !== dock.parentElement) {
-          probeOut.remove();
-          dock.parentElement.appendChild(probeOut);
-        }
-        probeIn.hidden = false;
-        probeOut.hidden = false;
 
         const cs = getComputedStyle(dock);
         console.log(
@@ -448,7 +462,7 @@
           "dockScheme=" + cs.getPropertyValue("color-scheme").trim()
         );
 
-        const drawSample = (r, label, samples) => {
+        const drawSample = (r, label) => {
           const W = Math.max(1, Math.round(r.width));
           const H = Math.max(1, Math.round(r.height));
           const canvas = document.createElementNS(
@@ -476,24 +490,56 @@
             ).data;
             return "rgb(" + d[0] + "," + d[1] + "," + d[2] + ")";
           };
-          const parts = samples.map(([nx, ny, tag]) => tag + "=" + px(nx, ny));
-          console.log(LOG, "drawWin[" + label + "]", parts.join(" "));
+          console.log(
+            LOG,
+            "drawWin[" + label + "]",
+            "mid=" + px(W / 2, H / 2),
+            "edge=" + px(4, H / 2)
+          );
         };
 
-        const dockRect = dock.getBoundingClientRect();
-        drawSample(dockRect, "dock", [
-          [dockRect.width / 2, 68, "row68"],
-          [6, 68, "rowEdge"],
-          [dockRect.width / 2, dockRect.height - 20, "probeIn"],
-          [dockRect.width / 2, 5, "topEdge"],
-        ]);
-        const outRect = probeOut.getBoundingClientRect();
-        if (outRect.width > 1) {
-          drawSample(outRect, "probeOut", [
-            [outRect.width / 2, 20, "mid"],
-            [8, 20, "edge"],
-          ]);
+        const animDump = () => {
+          for (const t of [dock, ...probes]) {
+            try {
+              const list = t.getAnimations({ subtree: true });
+              const parts = list.slice(0, 6).map((a) => {
+                const prop =
+                  a.propertyName || a.animationName || a.constructor.name;
+                return prop + ":" + a.playState + ":" + a.currentTime;
+              });
+              console.log(LOG, "anims[" + t.id + "]", parts.join(" | ") || "none");
+            } catch (ex) {
+              console.warn(LOG, "anims[" + t.id + "]", "failed:", ex);
+            }
+          }
+        };
+
+        const observer = new MutationObserver((muts) => {
+          for (const m of muts) {
+            console.log(
+              LOG,
+              "mut[" + (m.target.id || m.target.localName) + "]",
+              m.attributeName,
+              m.oldValue,
+              "->",
+              (m.target.getAttribute(m.attributeName) || "").slice(0, 60)
+            );
+          }
+        });
+        observer.observe(dock, { attributes: true, attributeOldValue: true });
+        for (const p of probes) {
+          observer.observe(p, { attributes: true, attributeOldValue: true });
         }
+
+        window.setTimeout(() => {
+          try {
+            for (const p of probes) drawSample(p.getBoundingClientRect(), p.id);
+            animDump();
+            window.setTimeout(() => observer.disconnect(), 3000);
+          } catch (ex) {
+            console.warn(LOG, "diagnosis failed:", ex);
+          }
+        }, 250);
       } catch (ex) {
         console.warn(LOG, "diagnosis failed:", ex);
       }
