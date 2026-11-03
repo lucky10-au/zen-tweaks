@@ -92,7 +92,7 @@
   overflow: clip;
   /* Canary read by [appmenu-dock] palette debug: proves which chrome.css
      revision the browser is actually using. */
-  --zt-css-version: 8;
+  --zt-css-version: 9;
   /* Stop betting on light-dark() resolution inside the dock: hardcode the
      light palette by default and the exact dark palette under Zen's own
      dark-mode attribute (zen-should-be-dark-mode on :root). Background
@@ -124,6 +124,18 @@
   fill: var(--zt-row-text) !important;
   opacity: 1 !important;
 }
+
+/* ROW-LIME SANITY TEST (temporary!). If the rows render lime green here,
+   our computed colours DO reach the screen and the "grey" was a real
+   colour-value problem; if they still look grey, something between the
+   styles and the pixels is dimming the dock subtree. Remove once contrast
+   is settled. */
+#zt-appmenu-dock toolbarbutton,
+#zt-appmenu-dock toolbarbutton * {
+  color: rgb(0 255 0) !important;
+  fill: rgb(0 255 0) !important;
+}
+
 
 #zt-appmenu-dock toolbarbutton:hover:not([disabled]) {
   background-color: var(--zt-row-hover-bg) !important;
