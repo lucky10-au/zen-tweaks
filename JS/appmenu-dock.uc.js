@@ -407,77 +407,96 @@
         return;
       }
       docked = true;
-      log("docked");
-      // Temporary palette diagnosis: prints which chrome.css revision won
-      // (--zt-css-version canary) and the colours actually resolved on the
-      // dock and one row. Remove once contrast is settled.
+      // Temporary paint diagnosis: two lime probes (one INSIDE the dock,
+      // one OUTSIDE it in the browser row) plus canvas.drawWindow of both
+      // regions. If drawWindow shows pure colours but the screen shows dim
+      // ones, the dimming is below Gecko (a native macOS material painted
+      // over the window). If drawWindow is also dim, it is a Gecko layer.
       try {
+        const mkProbe = (id) => {
+          let p = document.getElementById(id);
+          if (p && p.parentNode) return p;
+          p = document.createXULElement("vbox");
+          p.id = id;
+          p.setAttribute("style",
+            "flex:none;height:40px;background:rgb(0,255,0);" +
+            "align-items:center;justify-content:center;" +
+            "color:rgb(0,0,255);font-weight:800");
+          p.textContent = id;
+          return p;
+        };
+        const probeIn = mkProbe("zt-probe-in");
+        const probeOut = mkProbe("zt-probe-out");
+        if (probeIn.parentNode !== dock) {
+          probeIn.remove();
+          dock.appendChild(probeIn);
+        }
+        if (probeOut.parentNode !== dock.parentElement) {
+          probeOut.remove();
+          dock.parentElement.appendChild(probeOut);
+        }
+        probeIn.hidden = false;
+        probeOut.hidden = false;
+
         const cs = getComputedStyle(dock);
         console.log(
           LOG,
           "palette debug:",
           "css=" + (cs.getPropertyValue("--zt-css-version").trim() || "MISSING"),
-          "rootDark=" + document.documentElement.getAttribute("zen-should-be-dark-mode"),
-          "mqDark=" + matchMedia("(prefers-color-scheme: dark)").matches,
-          "dockScheme=" + cs.getPropertyValue("color-scheme").trim(),
-          "rowText=" + cs.getPropertyValue("--zt-row-text").trim(),
-          "dockBg=" + cs.backgroundColor
+          "rootDark=" +
+            document.documentElement.getAttribute("zen-should-be-dark-mode"),
+          "dockScheme=" + cs.getPropertyValue("color-scheme").trim()
         );
-        // Full histogram: every element with visible text/icon colour inside
-        // the dock, grouped by resolved paint-relevant properties, with
-        // sample paths. Ancestor opacity is multiplied in separately so a
-        // dimming wrapper can't hide behind each element reading 1.
-        const hist = new Map();
-        for (const el of dock.querySelectorAll("*")) {
-          const els = getComputedStyle(el);
-          if (els.visibility !== "visible" && els.display === "none") continue;
-          let ancestorOpacity = 1;
-          for (let p = el.parentElement; p && p !== dock.parentElement; p = p.parentElement) {
-            ancestorOpacity *= parseFloat(getComputedStyle(p).opacity) || 1;
-          }
-          const key =
-            els.color +
-            " | opacity=" + (parseFloat(els.opacity) * ancestorOpacity).toFixed(2) +
-            " | blend=" + els.mixBlendMode +
-            " | filter=" + (els.filter === "none" ? "" : els.filter) +
-            " | clip=" + (els.backgroundClip === "text" ? "TEXT" : "") +
-            " | shadow=" + (els.textShadow === "none" ? "" : "yes") +
-            " | fill=" + els.fill;
-          if (!hist.has(key)) hist.set(key, []);
-          if (hist.get(key).length < 3 && el.textContent.trim())
-            hist.get(key).push(el.tagName + "#" + el.id + "." + el.className);
-        }
-        for (const [key, samples] of hist) {
-          console.log(LOG, "colour:", key, "←", samples.join("  ·  "));
-        }
-        // The dock element itself and every ancestor up to the window root:
-        // any opacity/filter/blend dimming applied ABOVE the histogram's
-        // subtree shows up here.
-        console.log(
-          LOG,
-          "dock-self:",
-          "opacity=" + cs.opacity,
-          "filter=" + cs.filter,
-          "bg=" + cs.backgroundColor,
-          "inactive=" + document.documentElement.matches(":-moz-window-inactive"),
-          "greyOutInactive=" +
-            Services.prefs.getBoolPref("zen.view.grey-out-inactive-windows", false)
-        );
-        for (let p = dock.parentElement; p; p = p.parentElement) {
-          const acs = getComputedStyle(p);
-          const tag =
-            p.tagName + "#" + p.id + "." + (p.className || "").trim().split(/\s+/)[0];
-          console.log(
-            LOG,
-            "ancestor:",
-            tag,
-            "opacity=" + acs.opacity,
-            "filter=" + acs.filter,
-            "backdrop=" + acs.backdropFilter,
-            "blend=" + acs.mixBlendMode
+
+        const drawSample = (r, label, samples) => {
+          const W = Math.max(1, Math.round(r.width));
+          const H = Math.max(1, Math.round(r.height));
+          const canvas = document.createElementNS(
+            "http://www.w3.org/1999/xhtml",
+            "canvas"
           );
+          canvas.width = W;
+          canvas.height = H;
+          const ctx = canvas.getContext("2d");
+          ctx.drawWindow(
+            window,
+            r.left,
+            r.top,
+            W,
+            H,
+            "rgb(255,0,255)",
+            ctx.DRAWWINDOW_DRAW_VIEW
+          );
+          const px = (x, y) => {
+            const d = ctx.getImageData(
+              Math.min(W - 1, Math.max(0, Math.round(x))),
+              Math.min(H - 1, Math.max(0, Math.round(y))),
+              1,
+              1
+            ).data;
+            return "rgb(" + d[0] + "," + d[1] + "," + d[2] + ")";
+          };
+          const parts = samples.map(([nx, ny, tag]) => tag + "=" + px(nx, ny));
+          console.log(LOG, "drawWin[" + label + "]", parts.join(" "));
+        };
+
+        const dockRect = dock.getBoundingClientRect();
+        drawSample(dockRect, "dock", [
+          [dockRect.width / 2, 68, "row68"],
+          [6, 68, "rowEdge"],
+          [dockRect.width / 2, dockRect.height - 20, "probeIn"],
+          [dockRect.width / 2, 5, "topEdge"],
+        ]);
+        const outRect = probeOut.getBoundingClientRect();
+        if (outRect.width > 1) {
+          drawSample(outRect, "probeOut", [
+            [outRect.width / 2, 20, "mid"],
+            [8, 20, "edge"],
+          ]);
         }
-      } catch (ex) {}
+      } catch (ex) {
+        console.warn(LOG, "diagnosis failed:", ex);
+      }
     } catch (ex) {
       console.error(LOG, "failed to dock:", ex);
       stack = [];
