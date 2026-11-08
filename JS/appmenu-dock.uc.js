@@ -604,7 +604,39 @@
               ]);
             }
             animDump();
-            window.setTimeout(() => observer.disconnect(), 3000);
+            const later = (ms) =>
+              window.setTimeout(() => {
+                try {
+                  const view = dock.querySelector("panelview");
+                  const vcs = view ? getComputedStyle(view) : null;
+                  console.log(
+                    LOG,
+                    "later[" + ms + "]",
+                    "viewOpacity=" + (vcs ? vcs.opacity : "n/a"),
+                    "viewFilter=" + (vcs ? vcs.filter.slice(0, 20) : "n/a"),
+                    "viewBlend=" + (vcs ? vcs.mixBlendMode : "n/a"),
+                    "viewBackdrop=" + (vcs ? vcs.backdropFilter.slice(0, 20) : "n/a"),
+                    "anims=" +
+                      (view ? view.getAnimations({ subtree: true }).length : "n/a")
+                  );
+                  for (const e of inkEls) drawSample(e.getBoundingClientRect(), e.id);
+                  const row2 = dock.querySelector("panelview toolbarbutton");
+                  if (row2) {
+                    const r2 = row2.getBoundingClientRect();
+                    const W2 = Math.max(1, Math.round(r2.width));
+                    drawSample(
+                      r2,
+                      "later" + ms + ":" + (row2.id || row2.localName).slice(0, 12),
+                      [["mid", W2 * 0.5, Math.max(1, Math.round(r2.height / 2))]]
+                    );
+                  }
+                } catch (ex) {
+                  console.warn(LOG, "diagnosis failed:", ex);
+                }
+              }, ms);
+            later(1500);
+            later(3000);
+            window.setTimeout(() => observer.disconnect(), 4000);
           } catch (ex) {
             console.warn(LOG, "diagnosis failed:", ex);
           }
