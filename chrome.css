@@ -92,7 +92,7 @@
   overflow: clip;
   /* Canary read by [appmenu-dock] palette debug: proves which chrome.css
      revision the browser is actually using. */
-  --zt-css-version: 13;
+  --zt-css-version: 14;
   /* Stop betting on light-dark() resolution inside the dock: hardcode the
      light palette by default and the exact dark palette under Zen's own
      dark-mode attribute (zen-should-be-dark-mode on :root). Background
@@ -180,6 +180,14 @@
   backdrop-filter: none !important;
   transform: none !important;
   isolation: auto !important;
+}
+/* v2.1.18: appearance/vibrancy kill — if any element inside the dock
+   carries a native-material appearance value it renders macOS vibrancy,
+   which desaturates+dims content. Force them all off. */
+#zt-appmenu-dock,
+#zt-appmenu-dock * {
+  appearance: none !important;
+  -moz-default-appearance: none !important;
 }
 #zt-appmenu-dock::before,
 #zt-appmenu-dock::after,

@@ -842,6 +842,66 @@
             later(4000);
             later(6000);
             window.setTimeout(() => observer.disconnect(), 7000);
+            // ---------- v2.1.18: position & host tests ----------
+            window.setTimeout(() => {
+              try {
+                const first = document.createElement("div");
+                first.style.cssText =
+                  "width:60px;height:40px;background:#ffffff;";
+                dock.insertBefore(first, dock.firstChild);
+                const last = document.createElement("div");
+                last.style.cssText =
+                  "width:60px;height:50px;background:#ffffff;";
+                dock.appendChild(last);
+                drawSample(first.getBoundingClientRect(), "pos-first");
+                drawSample(last.getBoundingClientRect(), "pos-last");
+                // Appearance (vibrancy) sweep: dock ancestors + subtree.
+                const chain = [];
+                for (let e = dock; e; e = e.parentElement) {
+                  chain.push(
+                    e.localName + "#" + (e.id || "") + " app=" + getComputedStyle(e).appearance
+                  );
+                }
+                console.log(LOG, "appearanceChain dock-up: " + chain.join(" | "));
+                const seen = [];
+                const walkA = (el) => {
+                  for (const c of el.children) {
+                    const app = getComputedStyle(c).appearance;
+                    if (app && app !== "none") {
+                      seen.push(c.localName + "#" + (c.id || "") + " " + app);
+                    }
+                    walkA(c);
+                  }
+                };
+                walkA(dock);
+                console.log(
+                  LOG,
+                  "appearance!=none in dock: " +
+                    (seen.length ? seen.join(" ; ") : "none")
+                );
+                // Host test: move the view into a plain HTML sibling filling
+                // the dock's slot; does leaving the xul vbox change things?
+                const view2 = dock.querySelector("panelview");
+                if (view2) {
+                  const host = document.createElement("div");
+                  host.style.cssText =
+                    "display:flex;flex-direction:column;min-width:0;";
+                  host.style.width = dock.getBoundingClientRect().width + "px";
+                  dock.parentElement.insertBefore(host, dock);
+                  host.appendChild(view2);
+                  drawSample(first.getBoundingClientRect(), "hm-pos-first");
+                  drawSample(last.getBoundingClientRect(), "hm-pos-last");
+                  // Put the view back and tidy up.
+                  dock.insertBefore(view2, host);
+                  host.remove();
+                }
+                first.remove();
+                last.remove();
+                console.log(LOG, "v218 tests done");
+              } catch (ex) {
+                console.warn(LOG, "v218 tests failed:", ex);
+              }
+            }, 1200);
           } catch (ex) {
             console.warn(LOG, "diagnosis failed:", ex);
           }
