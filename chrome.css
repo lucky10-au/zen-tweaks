@@ -92,7 +92,7 @@
   overflow: clip;
   /* Canary read by [appmenu-dock] palette debug: proves which chrome.css
      revision the browser is actually using. */
-  --zt-css-version: 12;
+  --zt-css-version: 13;
   /* Stop betting on light-dark() resolution inside the dock: hardcode the
      light palette by default and the exact dark palette under Zen's own
      dark-mode attribute (zen-should-be-dark-mode on :root). Background
@@ -169,6 +169,20 @@
   transform: none !important;
   isolation: auto !important;
 }
+/* v2.1.17 extended kill: also cover the dock element itself and all
+   descendants (v2.1.14 rules only reached panelview). */
+#zt-appmenu-dock,
+#zt-appmenu-dock panelview,
+#zt-appmenu-dock panelview * {
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  backdrop-filter: none !important;
+  transform: none !important;
+  isolation: auto !important;
+}
+#zt-appmenu-dock::before,
+#zt-appmenu-dock::after,
 #zt-appmenu-dock panelview::before,
 #zt-appmenu-dock panelview::after,
 #zt-appmenu-dock panelview *::before,

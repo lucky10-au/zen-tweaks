@@ -819,14 +819,17 @@
                     "anims=" +
                       (view ? view.getAnimations({ subtree: true }).length : "n/a")
                   );
-                  for (const e of inkEls) drawSample(e.getBoundingClientRect(), e.id);
+                  // Decay matrix: same elements every round, labeled t<ms>.
+                  const tag = (x) => "t" + ms + (Number.isInteger(ms) ? "" : "") + ":" + x;
+                  for (const p of probes) drawSample(p.getBoundingClientRect(), tag(p.id));
+                  for (const e of inkEls) drawSample(e.getBoundingClientRect(), tag(e.id));
                   const row2 = dock.querySelector("panelview toolbarbutton");
                   if (row2) {
                     const r2 = row2.getBoundingClientRect();
                     const W2 = Math.max(1, Math.round(r2.width));
                     drawSample(
                       r2,
-                      "later" + ms + ":" + (row2.id || row2.localName).slice(0, 12),
+                      tag("row:" + (row2.id || row2.localName).slice(0, 12)),
                       [["mid", W2 * 0.5, Math.max(1, Math.round(r2.height / 2))]]
                     );
                   }
@@ -834,10 +837,11 @@
                   console.warn(LOG, "diagnosis failed:", ex);
                 }
               }, ms);
-            later(1500);
-            later(3000);
-            later(8000);
-            window.setTimeout(() => observer.disconnect(), 9500);
+            later(1000);
+            later(2000);
+            later(4000);
+            later(6000);
+            window.setTimeout(() => observer.disconnect(), 7000);
           } catch (ex) {
             console.warn(LOG, "diagnosis failed:", ex);
           }
