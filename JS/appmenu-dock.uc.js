@@ -107,6 +107,9 @@
   function returnNodeToCache(node) {
     if (!node) return;
     try {
+      // Temporary contrast-diagnosis ink probes must never ride back into
+      // the view cache (they would pollute the stock popup).
+      node.querySelectorAll("[data-zt-ink]").forEach((e) => e.remove());
       node.panelMultiView = null;
       const pv = PanelView.forNode(node);
       pv.visible = false;
@@ -452,6 +455,55 @@
           probes.push(p);
         }
 
+        // Ink probes INSIDE the panelview (same paint path as the menu
+        // rows): opaque white/black rects plus a big white text sample.
+        // Tells us whether plain ink also dims inside the panelview or
+        // only the row elements.
+        const mainView =
+          dock.querySelector("panelview#appMenu-mainView") ||
+          dock.querySelector("panelview");
+        const inkEls = [];
+        if (mainView) {
+          const mkInk = (id, css, text) => {
+            document.getElementById(id)?.remove();
+            const el = document.createElement("div");
+            el.id = id;
+            el.setAttribute("data-zt-ink", "");
+            Object.assign(el.style, css);
+            if (text) el.textContent = text;
+            mainView.prepend(el);
+            inkEls.push(el);
+            return el;
+          };
+          mkInk("zt-rect-white", {
+            width: "60px",
+            height: "40px",
+            background: "#ffffff",
+            flex: "none",
+            margin: "4px",
+          });
+          mkInk("zt-rect-black", {
+            width: "60px",
+            height: "40px",
+            background: "#000000",
+            flex: "none",
+            margin: "4px",
+          });
+          mkInk(
+            "zt-bigtext",
+            {
+              fontSize: "26px",
+              fontWeight: "700",
+              color: "#ffffff",
+              background: "#000000",
+              padding: "4px 8px",
+              flex: "none",
+              margin: "4px",
+            },
+            "ZT WHITE TEXT"
+          );
+        }
+
         const cs = getComputedStyle(dock);
         console.log(
           LOG,
@@ -462,7 +514,7 @@
           "dockScheme=" + cs.getPropertyValue("color-scheme").trim()
         );
 
-        const drawSample = (r, label) => {
+        const drawSample = (r, label, pts) => {
           const W = Math.max(1, Math.round(r.width));
           const H = Math.max(1, Math.round(r.height));
           const canvas = document.createElementNS(
@@ -490,11 +542,14 @@
             ).data;
             return "rgb(" + d[0] + "," + d[1] + "," + d[2] + ")";
           };
+          const list = pts || [
+            ["mid", W / 2, H / 2],
+            ["edge", 4, H / 2],
+          ];
           console.log(
             LOG,
             "drawWin[" + label + "]",
-            "mid=" + px(W / 2, H / 2),
-            "edge=" + px(4, H / 2)
+            list.map(([n, x, y]) => n + "=" + px(x, y)).join(" ")
           );
         };
 
@@ -534,6 +589,20 @@
         window.setTimeout(() => {
           try {
             for (const p of probes) drawSample(p.getBoundingClientRect(), p.id);
+            for (const e of inkEls) {
+              drawSample(e.getBoundingClientRect(), e.id);
+            }
+            const row = dock.querySelector("panelview toolbarbutton");
+            if (row) {
+              const r = row.getBoundingClientRect();
+              const W = Math.max(1, Math.round(r.width));
+              const H = Math.max(1, Math.round(r.height));
+              drawSample(r, "row:" + (row.id || row.localName).slice(0, 20), [
+                ["q25", W * 0.25, H / 2],
+                ["mid", W * 0.5, H / 2],
+                ["q75", W * 0.75, H / 2],
+              ]);
+            }
             animDump();
             window.setTimeout(() => observer.disconnect(), 3000);
           } catch (ex) {

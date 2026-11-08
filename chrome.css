@@ -92,7 +92,7 @@
   overflow: clip;
   /* Canary read by [appmenu-dock] palette debug: proves which chrome.css
      revision the browser is actually using. */
-  --zt-css-version: 10;
+  --zt-css-version: 11;
   /* Stop betting on light-dark() resolution inside the dock: hardcode the
      light palette by default and the exact dark palette under Zen's own
      dark-mode attribute (zen-should-be-dark-mode on :root). Background
@@ -100,10 +100,12 @@
   --zt-row-text: #15141a;
   --zt-row-hover-bg: rgb(0 0 0 / 0.06);
   --zt-row-active-bg: rgb(0 0 0 / 0.11);
-  background: var(
-    --zen-themed-toolbar-bg-transparent,
-    var(--zen-branding-bg, #e2e2e2)
-  );
+  /* ZT-PROBE (temporary): the dock's computed background measured
+     rgba(0,0,0,0) — fully transparent — so the window's vibrancy material
+     was likely showing through the entire dock area. A solid opaque
+     background removes that variable entirely. Restore the token chain
+     after contrast is settled. */
+  background: rgb(23, 23, 23);
   color: var(--zt-row-text);
 }
 
