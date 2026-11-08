@@ -654,148 +654,71 @@
               const dr0 = dock.getBoundingClientRect();
               efp(dr0.left + dr0.width / 2, dr0.bottom - 20, "dockBottom");
 
-              // Raw sweeps: exact RGB every 12px along three full-width lines
-              // (one through the bright probe strip, one at dock mid, one near
-              // the dock top) to find the exact bright/dim boundary geometry.
-              const rawSweeps = (tag) => {
-                const dr = dock.getBoundingClientRect();
-                const probe = probes.find((p) => p.id === "zt-probe-dock");
-                const pr = probe ? probe.getBoundingClientRect() : null;
-                console.log(
-                  LOG,
-                  "rawGeo-" + tag,
-                  "dock=[" + Math.round(dr.left) + "," + Math.round(dr.top) +
-                    " " + Math.round(dr.width) + "x" + Math.round(dr.height) + "]",
-                  "probe=[" + (pr ? Math.round(pr.left) + "," + Math.round(pr.top) + " " + Math.round(pr.width) + "x" + Math.round(pr.height) : "n/a") + "]"
-                );
-                const x0 = Math.floor(dr.left) - 24;
-                const W = Math.round(dr.width) + 72;
-                const H = Math.max(1, Math.round(dr.height));
-                const c = document.createElementNS(
-                  "http://www.w3.org/1999/xhtml",
-                  "canvas"
-                );
-                c.width = W;
-                c.height = H;
-                const cx = c.getContext("2d", { alpha: false });
-                cx.fillStyle = "rgb(255,0,255)";
-                cx.fillRect(0, 0, W, H);
-                cx.drawWindow(
-                  window,
-                  x0,
-                  Math.floor(dr.top),
-                  W,
-                  H,
-                  "rgb(255,0,255)",
-                  cx.DRAWWINDOW_DRAW_VIEW
-                );
-                const lines = [["top", dr.top + 24]];
-                if (pr) {
-                  lines.push(["probe", pr.top + pr.height / 2]);
-                }
-                lines.push(["mid", dr.top + dr.height / 2]);
-                for (const [name, wy] of lines) {
-                  const y = Math.min(H - 1, Math.max(0, Math.round(wy - dr.top)));
-                  const img = cx.getImageData(0, y, W, 1).data;
-                  const parts = [];
-                  for (let x = 0; x < W; x += 12) {
-                    const i = x * 4;
-                    parts.push(
-                      x0 + x + ":" + img[i] + "," + img[i + 1] + "," + img[i + 2]
-                    );
-                  }
-                  console.log(
-                    LOG,
-                    "rawY-" + name + "-" + tag + " | " + parts.join(" ")
-                  );
-                }
+              // z-falsifiers: identical white rects at normal z and at
+              // max-ish z. If max-z is bright while normal-z is grey, a
+              // high-z overlay is dimming everything beneath it — which
+              // also explains every prior "old vs fresh" confusion (the
+              // probe strips ALL carry z-index 2147483646 inline).
+              const mkZRect = (id, z) => {
+                const el = document.createElement("div");
+                el.id = id;
+                el.style.cssText =
+                  "position:relative;width:60px;height:40px;" +
+                  "background:#ffffff;flex:none;margin:2px;";
+                if (z) el.style.zIndex = String(z);
+                dock.appendChild(el);
+                return el;
               };
-              rawSweeps("early");
+              const wNorm = mkZRect("zt-znorm", 0);
+              const wTop = mkZRect("zt-ztop", 2147483646);
+              drawSample(wNorm.getBoundingClientRect(), "znorm-white");
+              drawSample(wTop.getBoundingClientRect(), "ztop-white");
+              // Elevate an existing ink INSIDE the panelview and a real row.
+              const ink0 = inkEls[0];
+              if (ink0) {
+                ink0.style.position = "relative";
+                ink0.style.zIndex = "2147483646";
+                drawSample(
+                  ink0.getBoundingClientRect(),
+                  "zview-ink-white"
+                );
+                ink0.style.zIndex = "";
+                ink0.style.position = "";
+              }
+              const rowEl = dock.querySelector("panelview toolbarbutton");
+              if (rowEl) {
+                rowEl.style.position = "relative";
+                rowEl.style.zIndex = "2147483646";
+                const rr = rowEl.getBoundingClientRect();
+                drawSample(rr, "zview-row", [
+                  ["mid", rr.width / 2, rr.height / 2],
+                ]);
+                rowEl.style.zIndex = "";
+                rowEl.style.position = "";
+              }
+              window.setTimeout(() => {
+                wNorm.remove();
+                wTop.remove();
+                console.log(LOG, "z-falsifiers done");
+              }, 900);
 
-              // Shell test A: fresh plain HTML div as dock child (not in view).
-              const a = document.createElement("div");
-              a.style.cssText = "width:60px;height:40px;background:#ffffff;";
-              dock.appendChild(a);
-              // Shell test B: brand-new empty xul panelview + white div child.
-              const b = document.createXULElement("panelview");
-              b.style.cssText =
-                "display:flex;width:90px;height:70px;background:#ff0000;";
-              const bChild = document.createElement("div");
-              bChild.style.cssText = "width:40px;height:40px;background:#ffffff;";
-              b.appendChild(bChild);
-              dock.appendChild(b);
-              // Shell test C: shallow CLONE of the real mainView + white child.
-              let cChild = null;
-              let cClone = null;
-              if (view && view.id) {
-                cClone = view.cloneNode(false);
-                cClone.removeAttribute("id");
-                cClone.style.cssText =
-                  "display:flex;width:90px;height:70px;background:#ff0000;";
-                cChild = document.createElement("div");
-                cChild.style.cssText =
-                  "width:40px;height:40px;background:#ffffff;";
-                cClone.appendChild(cChild);
-                dock.appendChild(cClone);
-              }
-              // Shell test D: move the REAL mainView into a plain HTML wrapper
-              // inside the dock (does parentage below the xul vbox matter?).
-              let wrapper = null;
-              if (view) {
-                wrapper = document.createElement("div");
-                wrapper.style.cssText = "display:flex;flex:1;";
-                dock.insertBefore(wrapper, view);
-                wrapper.appendChild(view);
-              }
-              drawSample(a.getBoundingClientRect(), "t-plain-html");
-              if (bChild) {
-                drawSample(bChild.getBoundingClientRect(), "t-shellview-child");
-                drawSample(b.getBoundingClientRect(), "t-shellview-bg");
-              }
-              if (cChild) {
-                drawSample(cChild.getBoundingClientRect(), "t-cloneview-child");
-              }
-              // Real view now inside wrapper: re-sample its ink probe.
-              for (const e of inkEls) {
-                drawSample(e.getBoundingClientRect(), "wrap-" + e.id);
-              }
-              if (wrapper && view) {
-                // Move the view back out of the wrapper.
-                dock.insertBefore(view, wrapper);
-                wrapper.remove();
-              }
-              // Repaint test: force the view through a display toggle (fresh
-              // composite), then insert ANOTHER fresh white div and compare
-              // both in the next rendered frame.
+              // Repaint test: force a fresh composite, redraw the inks to
+              // reconfirm the dim is time-static.
               if (view) {
                 view.style.display = "none";
                 void view.getBoundingClientRect();
                 view.style.display = "";
               }
-              const a2 = document.createElement("div");
-              a2.style.cssText = "width:60px;height:40px;background:#ffffff;";
-              dock.appendChild(a2);
               window.requestAnimationFrame(() => {
                 window.requestAnimationFrame(() => {
-                  try {
-                    for (const e of inkEls) {
-                      drawSample(e.getBoundingClientRect(), "r-" + e.id);
-                    }
-                    drawSample(a2.getBoundingClientRect(), "r-fresh-after-repaint");
-                    drawSample(a.getBoundingClientRect(), "r-t-plain-again");
-                    rawSweeps("repaint");
-                  } finally {
-                    a2.remove();
-                    a.remove();
-                    b.remove();
-                    if (cClone) cClone.remove();
-                    console.log(LOG, "repaint test done");
+                  for (const e of inkEls) {
+                    drawSample(e.getBoundingClientRect(), "r-" + e.id);
                   }
+                  console.log(LOG, "repaint test done");
                 });
               });
-              console.log(LOG, "shell tests done");
             } catch (ex) {
-              console.warn(LOG, "shell tests failed:", ex);
+              console.warn(LOG, "repaint test failed:", ex);
             }
             const later = (ms) =>
               window.setTimeout(() => {
@@ -831,82 +754,96 @@
                 }
               }, ms);
             later(1000);
-            later(2000);
             later(4000);
-            later(6000);
-            window.setTimeout(() => observer.disconnect(), 7000);
-            // ---------- v2.1.18: position & host tests ----------
-            window.setTimeout(() => {
+            window.setTimeout(() => observer.disconnect(), 5500);
+            // ---------- v2.1.20: overlay hunt ----------
+            // The dim behaves like a translucent dark layer ABOVE normal-z
+            // content, BELOW z 2147483646, invisible to elementsFromPoint
+            // (pointer-events:none). Scan DOM + key Zen pseudos for it.
+            const overlayHunt = (tag) => {
               try {
-                const first = document.createElement("div");
-                first.style.cssText =
-                  "width:60px;height:40px;background:#ffffff;";
-                dock.insertBefore(first, dock.firstChild);
-                const last = document.createElement("div");
-                last.style.cssText =
-                  "width:60px;height:50px;background:#ffffff;";
-                dock.appendChild(last);
-                drawSample(first.getBoundingClientRect(), "pos-first");
-                drawSample(last.getBoundingClientRect(), "pos-last");
-                // Appearance (vibrancy) sweep: dock ancestors + subtree.
-                const chain = [];
-                for (let e = dock; e; e = e.parentElement) {
-                  chain.push(
-                    e.localName + "#" + (e.id || "") + " app=" + getComputedStyle(e).appearance
-                  );
-                }
-                console.log(LOG, "appearanceChain dock-up: " + chain.join(" | "));
-                const seen = [];
-                const walkA = (el) => {
-                  for (const c of el.children) {
-                    const app = getComputedStyle(c).appearance;
-                    if (app && app !== "none") {
-                      seen.push(c.localName + "#" + (c.id || "") + " " + app);
-                    }
-                    walkA(c);
+                const hits = [];
+                const seen = new Set();
+                const describe = (el, cs, pseudo) => {
+                  const r = el.getBoundingClientRect();
+                  const id = el.id || "";
+                  if (seen.has(id + pseudo)) return;
+                  seen.add(id + pseudo);
+                  let cls = "";
+                  if (typeof el.className === "string") {
+                    cls = el.className.split(" ").slice(0, 3).join(".");
                   }
+                  hits.push(
+                    (pseudo || "") +
+                      el.localName +
+                      "#" +
+                      id +
+                      "." +
+                      cls +
+                      " pos=" +
+                      cs.position +
+                      " z=" +
+                      cs.zIndex +
+                      " pe=" +
+                      cs.pointerEvents +
+                      " op=" +
+                      cs.opacity +
+                      " r=[" +
+                      Math.round(r.left) +
+                      "," +
+                      Math.round(r.top) +
+                      " " +
+                      Math.round(r.width) +
+                      "x" +
+                      Math.round(r.height) +
+                      "] anim=" +
+                      cs.animationName +
+                      " bg=" +
+                      cs.backgroundColor.slice(0, 26) +
+                      " bf=" +
+                      cs.backdropFilter.slice(0, 16)
+                  );
                 };
-                walkA(dock);
+                for (const el of document.body.querySelectorAll("*")) {
+                  if (el.id?.startsWith("zt-")) continue;
+                  let cs;
+                  try {
+                    cs = getComputedStyle(el);
+                  } catch (ex) {
+                    continue;
+                  }
+                  if (cs.position === "static") continue;
+                  const z = parseInt(cs.zIndex, 10);
+                  if (!Number.isFinite(z) || z < 1000) continue;
+                  const r = el.getBoundingClientRect();
+                  if (r.width < 60 || r.height < 60) continue;
+                  describe(el, cs, "");
+                }
+                // Zen paints window-scale effects on pseudos of its bg hosts;
+                // pseudos never appear in elementsFromPoint scans.
+                const hosts = [
+                  document.getElementById("zen-main-app-wrapper"),
+                  document.getElementById("browser"),
+                  document.getElementById("zen-appcontent-wrapper"),
+                  document.body,
+                ].filter(Boolean);
+                for (const h of hosts) {
+                  for (const ps of ["::before", "::after"]) {
+                    const cs = getComputedStyle(h, ps);
+                    if (!cs || cs.content === "none") continue;
+                    describe(h, cs, ps);
+                  }
+                }
                 console.log(
                   LOG,
-                  "appearance!=none in dock: " +
-                    (seen.length ? seen.join(" ; ") : "none")
+                  "overlay[" + tag + "] " + (hits.length ? hits.join(" ; ") : "none found")
                 );
-                // Host test: move the view into a plain HTML sibling filling
-                // the dock's slot; does leaving the xul vbox change things?
-                const view2 = dock.querySelector("panelview");
-                if (view2) {
-                  const host = document.createElement("div");
-                  host.style.cssText =
-                    "display:flex;flex-direction:column;min-width:0;";
-                  host.style.width = dock.getBoundingClientRect().width + "px";
-                  dock.parentElement.insertBefore(host, dock);
-                  try {
-                    host.appendChild(view2);
-                    drawSample(first.getBoundingClientRect(), "hm-pos-first");
-                    drawSample(last.getBoundingClientRect(), "hm-pos-last");
-                  } finally {
-                    // Restore robustly: appendChild works regardless of prior
-                    // parentage (the v2.1.18 insertBefore crash shimmed this).
-                    dock.appendChild(view2);
-                    host.remove();
-                    first.remove();
-                    last.remove();
-                  }
-                  console.log(
-                    LOG,
-                    "v218-host restored; view in dock=" +
-                      (view2.parentElement === dock)
-                  );
-                } else {
-                  first.remove();
-                  last.remove();
-                }
-                console.log(LOG, "v218 tests done");
               } catch (ex) {
-                console.warn(LOG, "v218 tests failed:", ex);
+                console.warn(LOG, "overlay hunt failed:", ex);
               }
-            }, 1200);
+            };
+            overlayHunt("t300");
+            window.setTimeout(() => overlayHunt("t4000"), 4000);
           } catch (ex) {
             console.warn(LOG, "diagnosis failed:", ex);
           }
