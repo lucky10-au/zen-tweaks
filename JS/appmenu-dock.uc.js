@@ -654,14 +654,24 @@
               const dr0 = dock.getBoundingClientRect();
               efp(dr0.left + dr0.width / 2, dr0.bottom - 20, "dockBottom");
 
-              // Sweep: classify a horizontal line at dock mid-height, every
-              // 14px, as W(bright>=200), d(60..100 = dimmed white), m(magenta
-              // backdrop), k(dark<40). Maps the exact dim region.
-              const sweepLines = (tag) => {
-                const r = dock.getBoundingClientRect();
-                const W = Math.max(1, Math.round(r.width));
-                const H = Math.max(1, Math.round(r.height));
-                const c = window.document.createElementNS(
+              // Raw sweeps: exact RGB every 12px along three full-width lines
+              // (one through the bright probe strip, one at dock mid, one near
+              // the dock top) to find the exact bright/dim boundary geometry.
+              const rawSweeps = (tag) => {
+                const dr = dock.getBoundingClientRect();
+                const probe = probes.find((p) => p.id === "zt-probe-dock");
+                const pr = probe ? probe.getBoundingClientRect() : null;
+                console.log(
+                  LOG,
+                  "rawGeo-" + tag,
+                  "dock=[" + Math.round(dr.left) + "," + Math.round(dr.top) +
+                    " " + Math.round(dr.width) + "x" + Math.round(dr.height) + "]",
+                  "probe=[" + (pr ? Math.round(pr.left) + "," + Math.round(pr.top) + " " + Math.round(pr.width) + "x" + Math.round(pr.height) : "n/a") + "]"
+                );
+                const x0 = Math.floor(dr.left) - 24;
+                const W = Math.round(dr.width) + 72;
+                const H = Math.max(1, Math.round(dr.height));
+                const c = document.createElementNS(
                   "http://www.w3.org/1999/xhtml",
                   "canvas"
                 );
@@ -672,52 +682,35 @@
                 cx.fillRect(0, 0, W, H);
                 cx.drawWindow(
                   window,
-                  r.left,
-                  r.top,
+                  x0,
+                  Math.floor(dr.top),
                   W,
                   H,
                   "rgb(255,0,255)",
                   cx.DRAWWINDOW_DRAW_VIEW
                 );
-                const line = (y) => {
-                  const img = cx.getImageData(0, y, W, 1).data;
-                  let s = "";
-                  for (let x = 0; x < W; x += 14) {
-                    const i = x * 4;
-                    const R = img[i];
-                    const G = img[i + 1];
-                    const B = img[i + 2];
-                    s +=
-                      R >= 200 && G >= 200 && B >= 200
-                        ? "W"
-                        : R >= 55 && R <= 105 && G <= 105 && B <= 105
-                          ? "d"
-                          : R >= 200 && G < 60 && B >= 200
-                            ? "m"
-                            : "k";
-                  }
-                  console.log(LOG, "sweepX-" + tag + " y=" + y + " |" + s + "|");
-                };
-                line(Math.floor(H * 0.5));
-                const imgC = cx.getImageData(Math.floor(W * 0.5), 0, 1, H).data;
-                let sv = "";
-                for (let y = 0; y < H; y += 14) {
-                  const i = y * 4;
-                  const R = imgC[i];
-                  const G = imgC[i + 1];
-                  const B = imgC[i + 2];
-                  sv +=
-                    R >= 200 && G >= 200 && B >= 200
-                      ? "W"
-                      : R >= 55 && R <= 105 && G <= 105 && B <= 105
-                        ? "d"
-                        : R >= 200 && G < 60 && B >= 200
-                          ? "m"
-                          : "k";
+                const lines = [["top", dr.top + 24]];
+                if (pr) {
+                  lines.push(["probe", pr.top + pr.height / 2]);
                 }
-                console.log(LOG, "sweepY-" + tag + " x=mid |" + sv + "| len=" + Math.ceil(H / 14));
+                lines.push(["mid", dr.top + dr.height / 2]);
+                for (const [name, wy] of lines) {
+                  const y = Math.min(H - 1, Math.max(0, Math.round(wy - dr.top)));
+                  const img = cx.getImageData(0, y, W, 1).data;
+                  const parts = [];
+                  for (let x = 0; x < W; x += 12) {
+                    const i = x * 4;
+                    parts.push(
+                      x0 + x + ":" + img[i] + "," + img[i + 1] + "," + img[i + 2]
+                    );
+                  }
+                  console.log(
+                    LOG,
+                    "rawY-" + name + "-" + tag + " | " + parts.join(" ")
+                  );
+                }
               };
-              sweepLines("early");
+              rawSweeps("early");
 
               // Shell test A: fresh plain HTML div as dock child (not in view).
               const a = document.createElement("div");
@@ -790,7 +783,7 @@
                     }
                     drawSample(a2.getBoundingClientRect(), "r-fresh-after-repaint");
                     drawSample(a.getBoundingClientRect(), "r-t-plain-again");
-                    sweepLines("repaint");
+                    rawSweeps("repaint");
                   } finally {
                     a2.remove();
                     a.remove();
@@ -888,15 +881,27 @@
                     "display:flex;flex-direction:column;min-width:0;";
                   host.style.width = dock.getBoundingClientRect().width + "px";
                   dock.parentElement.insertBefore(host, dock);
-                  host.appendChild(view2);
-                  drawSample(first.getBoundingClientRect(), "hm-pos-first");
-                  drawSample(last.getBoundingClientRect(), "hm-pos-last");
-                  // Put the view back and tidy up.
-                  dock.insertBefore(view2, host);
-                  host.remove();
+                  try {
+                    host.appendChild(view2);
+                    drawSample(first.getBoundingClientRect(), "hm-pos-first");
+                    drawSample(last.getBoundingClientRect(), "hm-pos-last");
+                  } finally {
+                    // Restore robustly: appendChild works regardless of prior
+                    // parentage (the v2.1.18 insertBefore crash shimmed this).
+                    dock.appendChild(view2);
+                    host.remove();
+                    first.remove();
+                    last.remove();
+                  }
+                  console.log(
+                    LOG,
+                    "v218-host restored; view in dock=" +
+                      (view2.parentElement === dock)
+                  );
+                } else {
+                  first.remove();
+                  last.remove();
                 }
-                first.remove();
-                last.remove();
                 console.log(LOG, "v218 tests done");
               } catch (ex) {
                 console.warn(LOG, "v218 tests failed:", ex);
