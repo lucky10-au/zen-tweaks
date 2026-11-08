@@ -13,10 +13,11 @@
 
   const apply = (on) => {
     if (on) {
-      // Restore Zen default behavior (the button shows again).
-      Services.prefs.clearUserPref(VIDEO_TOGGLE);
-    } else {
+      // Tweak active: kill the inline PiP overlay button on all videos.
       Services.prefs.setBoolPref(VIDEO_TOGGLE, false);
+    } else {
+      // Tweak off: restore Zen's default (the button shows again).
+      Services.prefs.clearUserPref(VIDEO_TOGGLE);
     }
   };
 
