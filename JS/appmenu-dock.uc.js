@@ -604,6 +604,142 @@
               ]);
             }
             animDump();
+            // ---------- v2.1.15 isolation tests ----------
+            try {
+              const view = dock.querySelector("panelview");
+              console.log(
+                LOG,
+                "viewAttrs= " +
+                  (view
+                    ? Array.from(view.attributes)
+                        .map((a) => a.name + "=" + a.value)
+                        .join(" ")
+                    : "none")
+              );
+
+              // Sweep: classify a horizontal line at dock mid-height, every
+              // 14px, as W(bright>=200), d(60..100 = dimmed white), m(magenta
+              // backdrop), k(dark<40). Maps the exact dim region.
+              (function sweep() {
+                const r = dock.getBoundingClientRect();
+                const W = Math.max(1, Math.round(r.width));
+                const H = Math.max(1, Math.round(r.height));
+                const c = window.document.createElementNS(
+                  "http://www.w3.org/1999/xhtml",
+                  "canvas"
+                );
+                c.width = W;
+                c.height = H;
+                const cx = c.getContext("2d", { alpha: false });
+                cx.fillStyle = "rgb(255,0,255)";
+                cx.fillRect(0, 0, W, H);
+                cx.drawWindow(
+                  window,
+                  r.left,
+                  r.top,
+                  W,
+                  H,
+                  "rgb(255,0,255)",
+                  cx.DRAWWINDOW_DRAW_VIEW
+                );
+                const line = (y) => {
+                  const img = cx.getImageData(0, y, W, 1).data;
+                  let s = "";
+                  for (let x = 0; x < W; x += 14) {
+                    const i = x * 4;
+                    const R = img[i];
+                    const G = img[i + 1];
+                    const B = img[i + 2];
+                    s +=
+                      R >= 200 && G >= 200 && B >= 200
+                        ? "W"
+                        : R >= 55 && R <= 105 && G <= 105 && B <= 105
+                          ? "d"
+                          : R >= 200 && G < 60 && B >= 200
+                            ? "m"
+                            : "k";
+                  }
+                  console.log(LOG, "sweepX y=" + y + " |" + s + "|");
+                };
+                line(Math.floor(H * 0.5));
+                const imgC = cx.getImageData(Math.floor(W * 0.5), 0, 1, H).data;
+                let sv = "";
+                for (let y = 0; y < H; y += 14) {
+                  const i = y * 4;
+                  const R = imgC[i];
+                  const G = imgC[i + 1];
+                  const B = imgC[i + 2];
+                  sv +=
+                    R >= 200 && G >= 200 && B >= 200
+                      ? "W"
+                      : R >= 55 && R <= 105 && G <= 105 && B <= 105
+                        ? "d"
+                        : R >= 200 && G < 60 && B >= 200
+                          ? "m"
+                          : "k";
+                }
+                console.log(LOG, "sweepY x=mid |" + sv + "| len=" + Math.ceil(H / 14));
+              })();
+
+              // Shell test A: fresh plain HTML div as dock child (not in view).
+              const a = document.createElement("div");
+              a.style.cssText = "width:60px;height:40px;background:#ffffff;";
+              dock.appendChild(a);
+              // Shell test B: brand-new empty xul panelview + white div child.
+              const b = document.createXULElement("panelview");
+              b.style.cssText =
+                "display:flex;width:90px;height:70px;background:#ff0000;";
+              const bChild = document.createElement("div");
+              bChild.style.cssText = "width:40px;height:40px;background:#ffffff;";
+              b.appendChild(bChild);
+              dock.appendChild(b);
+              // Shell test C: shallow CLONE of the real mainView + white child.
+              let cChild = null;
+              let cClone = null;
+              if (view && view.id) {
+                cClone = view.cloneNode(false);
+                cClone.removeAttribute("id");
+                cClone.style.cssText =
+                  "display:flex;width:90px;height:70px;background:#ff0000;";
+                cChild = document.createElement("div");
+                cChild.style.cssText =
+                  "width:40px;height:40px;background:#ffffff;";
+                cClone.appendChild(cChild);
+                dock.appendChild(cClone);
+              }
+              // Shell test D: move the REAL mainView into a plain HTML wrapper
+              // inside the dock (does parentage below the xul vbox matter?).
+              let wrapper = null;
+              if (view) {
+                wrapper = document.createElement("div");
+                wrapper.style.cssText = "display:flex;flex:1;";
+                dock.insertBefore(wrapper, view);
+                wrapper.appendChild(view);
+              }
+              drawSample(a.getBoundingClientRect(), "t-plain-html");
+              if (bChild) {
+                drawSample(bChild.getBoundingClientRect(), "t-shellview-child");
+                drawSample(b.getBoundingClientRect(), "t-shellview-bg");
+              }
+              if (cChild) {
+                drawSample(cChild.getBoundingClientRect(), "t-cloneview-child");
+              }
+              // Real view now inside wrapper: re-sample its ink probe.
+              for (const e of inkEls) {
+                drawSample(e.getBoundingClientRect(), "wrap-" + e.id);
+              }
+              if (wrapper && view) {
+                // Move the view back out of the wrapper.
+                dock.insertBefore(view, wrapper);
+                wrapper.remove();
+              }
+              a.remove();
+              b.remove();
+              if (cClone) cClone.remove();
+              console.log(LOG, "shell tests done");
+            } catch (ex) {
+              console.warn(LOG, "shell tests failed:", ex);
+            }
             const later = (ms) =>
               window.setTimeout(() => {
                 try {
