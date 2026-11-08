@@ -617,10 +617,47 @@
                     : "none")
               );
 
+              // Top-layer dump: what elements actually exist over the sampled
+              // points (decesive for overlay-type effects).
+              const efp = (x, y, label) => {
+                const els = [...document.elementsFromPoint(x, y)].slice(0, 6);
+                console.log(
+                  LOG,
+                  "efp[" + label + "]",
+                  ...els.map((el) => {
+                    const cs = getComputedStyle(el);
+                    const cls =
+                      typeof el.className === "string"
+                        ? el.className.split(" ").slice(0, 2).join(".")
+                        : "";
+                    return (
+                      el.localName +
+                      "#" +
+                      (el.id || "") +
+                      "." +
+                      cls +
+                      " op=" +
+                      cs.opacity +
+                      " bg=" +
+                      cs.backgroundColor.slice(0, 22) +
+                      " tf=" +
+                      cs.transform.slice(0, 22)
+                    );
+                  })
+                );
+              };
+              const vr = view ? view.getBoundingClientRect() : null;
+              if (vr) {
+                efp(vr.left + vr.width / 2, vr.top + Math.max(10, vr.height * 0.15), "viewTop");
+                efp(vr.left + vr.width / 2, vr.top + vr.height / 2, "viewMid");
+              }
+              const dr0 = dock.getBoundingClientRect();
+              efp(dr0.left + dr0.width / 2, dr0.bottom - 20, "dockBottom");
+
               // Sweep: classify a horizontal line at dock mid-height, every
               // 14px, as W(bright>=200), d(60..100 = dimmed white), m(magenta
               // backdrop), k(dark<40). Maps the exact dim region.
-              (function sweep() {
+              const sweepLines = (tag) => {
                 const r = dock.getBoundingClientRect();
                 const W = Math.max(1, Math.round(r.width));
                 const H = Math.max(1, Math.round(r.height));
@@ -659,7 +696,7 @@
                             ? "m"
                             : "k";
                   }
-                  console.log(LOG, "sweepX y=" + y + " |" + s + "|");
+                  console.log(LOG, "sweepX-" + tag + " y=" + y + " |" + s + "|");
                 };
                 line(Math.floor(H * 0.5));
                 const imgC = cx.getImageData(Math.floor(W * 0.5), 0, 1, H).data;
@@ -678,8 +715,9 @@
                           ? "m"
                           : "k";
                 }
-                console.log(LOG, "sweepY x=mid |" + sv + "| len=" + Math.ceil(H / 14));
-              })();
+                console.log(LOG, "sweepY-" + tag + " x=mid |" + sv + "| len=" + Math.ceil(H / 14));
+              };
+              sweepLines("early");
 
               // Shell test A: fresh plain HTML div as dock child (not in view).
               const a = document.createElement("div");
@@ -733,9 +771,35 @@
                 dock.insertBefore(view, wrapper);
                 wrapper.remove();
               }
-              a.remove();
-              b.remove();
-              if (cClone) cClone.remove();
+              // Repaint test: force the view through a display toggle (fresh
+              // composite), then insert ANOTHER fresh white div and compare
+              // both in the next rendered frame.
+              if (view) {
+                view.style.display = "none";
+                void view.getBoundingClientRect();
+                view.style.display = "";
+              }
+              const a2 = document.createElement("div");
+              a2.style.cssText = "width:60px;height:40px;background:#ffffff;";
+              dock.appendChild(a2);
+              window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                  try {
+                    for (const e of inkEls) {
+                      drawSample(e.getBoundingClientRect(), "r-" + e.id);
+                    }
+                    drawSample(a2.getBoundingClientRect(), "r-fresh-after-repaint");
+                    drawSample(a.getBoundingClientRect(), "r-t-plain-again");
+                    sweepLines("repaint");
+                  } finally {
+                    a2.remove();
+                    a.remove();
+                    b.remove();
+                    if (cClone) cClone.remove();
+                    console.log(LOG, "repaint test done");
+                  }
+                });
+              });
               console.log(LOG, "shell tests done");
             } catch (ex) {
               console.warn(LOG, "shell tests failed:", ex);
@@ -772,7 +836,8 @@
               }, ms);
             later(1500);
             later(3000);
-            window.setTimeout(() => observer.disconnect(), 4000);
+            later(8000);
+            window.setTimeout(() => observer.disconnect(), 9500);
           } catch (ex) {
             console.warn(LOG, "diagnosis failed:", ex);
           }
