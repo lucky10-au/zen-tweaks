@@ -32,7 +32,14 @@
     "type": "checkbox",
     "label": "**Remove the video picture-in-picture button**",
     "defaultValue": true,
-    "description": "Hides the PiP button that appears in the corner of videos on hover. Applies to videos opened afterwards; changes take effect immediately."
+    "description": "Hides the PiP button that appears in the corner of videos on hover. Turn the toggle back on to restore Zen's default. Applies to videos opened afterwards."
+  },
+  {
+    "property": "extensions.zentweaks.auto-pip-tabs.enabled",
+    "type": "checkbox",
+    "label": "**Auto PiP when switching tabs**",
+    "defaultValue": false,
+    "description": "When a video is playing and you switch to another tab, the video is automatically put in Picture-in-Picture. Requires Zen to be restarted after toggling."
   },
   {
     "property": "extensions.zentweaks.appmenu-dock.enabled",
