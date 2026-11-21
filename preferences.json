@@ -42,6 +42,13 @@
     "description": "When a video is playing and you switch to another tab, the video is automatically put in Picture-in-Picture. Requires Zen to be restarted after toggling."
   },
   {
+    "property": "extensions.zentweaks.pdf-download.enabled",
+    "type": "checkbox",
+    "label": "**Download PDFs instead of opening in viewer**",
+    "defaultValue": false,
+    "description": "Prevents the built-in PDF viewer from opening; PDF files download to your disk instead. Requires Zen to be restarted after toggling."
+  },
+  {
     "property": "extensions.zentweaks.appmenu-dock.enabled",
     "type": "checkbox",
     "label": "**Dock the ⋯ menu as a right sidebar**",

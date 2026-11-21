@@ -1,9 +1,9 @@
 {
   "id": "c5vz4zi4l-yvtklwwb2-vnb35ev30",
   "name": "Zen Tweaks",
-  "description": "Collapses workspace dots CSS, ⌘W closes the URL bar, 5s toasts, URL bar autofill tweaks, native-style dropdowns with ⋯ corner pinning or right sidebar dock (experimental), video PiP button removed, auto PiP when switching tabs, fullscreen banner shrunk. Each tweak togglable in Sine settings (except the permanent workspace-dots CSS).",
+  "description": "Collapses workspace dots CSS, ⌘W closes the URL bar, 5s toasts, URL bar autofill tweaks, native-style dropdowns with ⋯ corner pinning or right sidebar dock (experimental), video PiP button removed, auto PiP when switching tabs, PDFs download instead of opening in viewer, fullscreen banner shrunk. Each tweak togglable in Sine settings (except the permanent workspace-dots CSS).",
   "homepage": "https://github.com/lucky10-au/zen-tweaks",
-  "version": "2.1.21",
+  "version": "2.1.22",
   "author": "Luca Were",
   "style": {
     "chrome": "chrome.css",
@@ -51,6 +51,12 @@
         "chrome://browser/content/browser.xhtml"
       ],
       "loadOrder": 7
+    },
+    "JS/pdf-download.uc.js": {
+      "include": [
+        "chrome://browser/content/browser.xhtml"
+      ],
+      "loadOrder": 8
     }
   },
   "preferences": "preferences.json",

@@ -9,6 +9,7 @@ A [Sine](https://github.com/CosmoCreeper/Sine) mod for the [Zen Browser](https:/
 - **Better URL bar suggestions** — enables adaptive-history autofill (completes the deep pages you visit often, not just homepages) and widens the dropdown to 15 results so history isn't crowded out by search suggestions (history ranks above search suggestions).
 - **Video PiP button removed** — the picture-in-picture hover button that overlays every video disappears. Turn the toggle back on to restore Zen's default.
 - **Auto PiP when switching tabs** — when a video is playing and you switch to another tab, the video is automatically put in Picture-in-Picture. Requires a Zen restart after toggling.
+- **Download PDFs instead of opening in viewer** — prevents the built-in PDF viewer from opening; PDF files download to your disk instead. Requires a Zen restart after toggling.
 - **Collapsed sidebar CSS** — hides the workspace "three dots" options button in collapsed sidebar mode and dims the space icon on hover. Always on (pure CSS, no toggle).
 - **Native-style dropdowns** — the app menu and the other arrow-panel popups are re-styled as flat, 4px-corner glass instead of Zen's default glass, and the ⋯ menu is pinned flush into the top-right corner of the page area (toggle for the pinning).
 - **⋯ menu as a right sidebar (experimental)** — the ⋯ app menu opens as a resizable panel on the right side of the window instead of a floating popup; the page area shrinks to fit. Drag the divider to resize; flip the toggle off to go back to the normal popup.
@@ -32,7 +33,8 @@ JS/urlbar-tweaks.uc.js Adaptive URL bar autofill + 15 results
 JS/appmenu-corner.uc.js Pins the ⋯ menu into the page corner
 JS/pip-toggle.uc.js    Removes the video picture-in-picture button
 JS/auto-pip-tabs.uc.js Auto PiP when switching tabs (playing video goes to PiP when you change tabs)
-JS/appmenu-dock.uc.js  Docks the ⋯ menu as a resizable right sidebar (experimental)
+JS/pdf-download.uc.js   Download PDFs instead of opening them in the built-in viewer
+JS/appmenu-dock.uc.js   Docks the ⋯ menu as a resizable right sidebar (experimental)
 preferences.json       Per-tweak checkboxes for Sine's settings panel
 ```
 - Fullscreen banner shrunk to a small pill (was a 21px-font monster)
